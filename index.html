@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Farmacia</title>
+<meta name="theme-color" content="#F3F7F7" id="meta-theme">
+<meta name="description" content="Scorte e terapie dei familiari">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{
+  --bg:#F3F7F7;--surface:#FFFFFF;--surface2:#EDF3F3;--text:#0F2A2A;--muted:#5E7676;--line:#E0E9E9;
+  --pri:#0E8F84;--pri-2:#0B6F79;--pri-soft:#DCF2EE;--pri-ink:#09594F;
+  --red:#D94545;--red-soft:#FBE8E7;--amber:#C77D06;--amber-soft:#FCF0DA;--green:#1C9460;--green-soft:#DFF3E8;
+  --blue:#2F6BD6;--blue-soft:#E3ECFB;--grey-soft:#EBEFEF;
+  --shadow:0 1px 2px rgba(15,42,42,.05),0 6px 20px rgba(15,42,42,.06);--r:18px;
+}
+[data-theme=dark]{
+  --bg:#0A1413;--surface:#121F1E;--surface2:#1A2B2A;--text:#E2EEED;--muted:#8AA3A1;--line:#223634;
+  --pri:#2BB5A7;--pri-2:#178D8A;--pri-soft:#123B37;--pri-ink:#8FE3D8;
+  --red:#F06A6A;--red-soft:#3A1C1C;--amber:#EBA93A;--amber-soft:#3A2C12;--green:#45C486;--green-soft:#133224;
+  --blue:#6F9BF0;--blue-soft:#18264A;--grey-soft:#1E2C2B;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0;text-align:inherit}
+input,select,textarea{font:inherit}
+.app{max-width:640px;margin:0 auto;min-height:100vh;padding:0 16px calc(100px + env(safe-area-inset-bottom))}
+svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.s{width:18px;height:18px}
+
+/* header */
+header.top{position:sticky;top:0;z-index:5;margin:0 -16px;padding:calc(14px + env(safe-area-inset-top)) 16px 12px;background:color-mix(in srgb,var(--bg) 86%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);display:flex;align-items:center;gap:12px;min-height:64px}
+.top .tt{flex:1;min-width:0}
+.top h1{font-size:25px;font-weight:700;letter-spacing:-.025em;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .sub{color:var(--muted);font-size:13px;margin-top:1px}
+.top.small h1{font-size:19px}
+.icon-btn{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--surface);box-shadow:var(--shadow);flex:none}
+.brand{width:42px;height:42px;border-radius:13px;background:linear-gradient(140deg,var(--pri),var(--pri-2));display:grid;place-items:center;color:#fff;flex:none}
+
+/* nav */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:color-mix(in srgb,var(--surface) 94%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+nav.tabs .in{display:flex;max-width:640px;margin:0 auto}
+nav.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;font-size:11.5px;color:var(--muted);font-weight:500;position:relative}
+nav.tabs .pb{width:56px;height:30px;border-radius:15px;display:grid;place-items:center;transition:background .2s}
+nav.tabs button.on{color:var(--pri-ink)}
+nav.tabs button.on .pb{background:var(--pri-soft);color:var(--pri)}
+.nb{position:absolute;top:0;left:calc(50% + 9px);background:var(--red);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 5px;border:2px solid var(--surface)}
+
+/* blocks */
+.sec{font-size:12.5px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:22px 4px 9px;display:flex;justify-content:space-between;align-items:center}
+.sec small{text-transform:none;letter-spacing:0;font-weight:500}
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+.stack>*+*{margin-top:10px}
+.muted{color:var(--muted)}
+.hero{border-radius:22px;padding:18px;color:#fff;background:linear-gradient(135deg,var(--pri) 0%,var(--pri-2) 100%);display:flex;gap:14px;align-items:center;position:relative;overflow:hidden;width:100%}
+.hero::after{content:"";position:absolute;right:-30px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero.warn{background:linear-gradient(135deg,#C2453F 0%,#9E3361 100%)}
+.hero .hi{width:48px;height:48px;border-radius:15px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}
+.hero b{display:block;font-size:18px;font-weight:700;letter-spacing:-.01em}
+.hero span{font-size:13.5px;opacity:.9}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.tile{background:var(--surface);border-radius:16px;padding:12px 12px 11px;box-shadow:var(--shadow)}
+.tile b{display:block;font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.tile span{color:var(--muted);font-size:12px}
+.chips{display:flex;gap:8px;overflow-x:auto;margin:16px -16px 0;padding:2px 16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow);font-size:13.5px;font-weight:550;white-space:nowrap}
+.chip.on{background:var(--text);color:var(--bg)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c,var(--pri));flex:none}
+.banner{display:flex;gap:12px;align-items:center;padding:13px 14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);font-size:13.5px;width:100%}
+.banner .bi{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--amber-soft);color:var(--amber)}
+.banner.blue .bi{background:var(--blue-soft);color:var(--blue)}
+.banner.red .bi{background:var(--red-soft);color:var(--red)}
+.banner b{display:block;font-size:14px}
+.banner .bx{flex:1;min-width:0}
+
+/* medicine card */
+.med{display:flex;align-items:center;gap:12px;width:100%;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:13px 14px}
+.med-ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;flex:none;background:var(--green-soft);color:var(--green)}
+.lv-giallo .med-ico{background:var(--amber-soft);color:var(--amber)}
+.lv-rosso .med-ico,.lv-esaurito .med-ico{background:var(--red-soft);color:var(--red)}
+.lv-ok .med-ico{background:var(--pri-soft);color:var(--pri)}
+.lv-inattiva .med-ico{background:var(--grey-soft);color:var(--muted)}
+.med-body{flex:1;min-width:0}
+.med-nome{font-weight:650;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.med-nome .dos{font-weight:500;color:var(--muted);font-size:13.5px}
+.med-sub{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden}
+.bar{height:5px;border-radius:3px;background:var(--surface2);margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--green)}
+.lv-giallo .bar i{background:var(--amber)} .lv-rosso .bar i,.lv-esaurito .bar i{background:var(--red)} .lv-ok .bar i{background:var(--pri)}
+.med-gg{text-align:right;flex:none;min-width:48px}
+.med-gg b{display:block;font-size:21px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.med-gg small{font-size:11px;color:var(--muted)}
+.lv-rosso .med-gg b,.lv-esaurito .med-gg b{color:var(--red)} .lv-giallo .med-gg b{color:var(--amber)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted);white-space:nowrap}
+.tag.red{background:var(--red-soft);color:var(--red)} .tag.amber{background:var(--amber-soft);color:var(--amber)} .tag.green{background:var(--green-soft);color:var(--green)} .tag.blue{background:var(--blue-soft);color:var(--blue)} .tag.pri{background:var(--pri-soft);color:var(--pri-ink)}
+.med-tags{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+
+/* persone */
+.pers{display:flex;align-items:center;gap:13px;width:100%;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:14px}
+.av{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-weight:700;font-size:18px;color:#fff;background:var(--c);flex:none}
+.av.lg{width:60px;height:60px;border-radius:19px;font-size:24px}
+.pers .nm{font-weight:650;font-size:16px}
+.pers .ds{font-size:12.5px;color:var(--muted)}
+
+/* dettaglio */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:13px 14px}
+.stat span{font-size:12px;color:var(--muted);display:block}
+.stat b{font-size:19px;font-weight:700;letter-spacing:-.015em;display:block;margin-top:2px}
+.stat small{font-size:12px;color:var(--muted)}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.act{display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 6px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);font-size:12.5px;font-weight:600;text-align:center}
+.act .ai{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--pri-soft);color:var(--pri)}
+.act.red .ai{background:var(--red-soft);color:var(--red)}
+.act.blue .ai{background:var(--blue-soft);color:var(--blue)}
+.rows{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.row{display:flex;justify-content:space-between;gap:14px;padding:12px 15px;border-bottom:1px solid var(--line);font-size:14px;align-items:center}
+.row:last-child{border-bottom:0}
+.row>span:first-child{color:var(--muted)}
+.row>span:last-child{text-align:right;font-weight:550}
+button.row{width:100%}
+.tl{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:6px 0}
+.tl-i{display:flex;gap:12px;padding:10px 15px;font-size:13.5px}
+.tl-i .td{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--surface2);color:var(--muted)}
+.tl-i .td svg{width:16px;height:16px}
+.tl-i .tx{flex:1;min-width:0}
+.tl-i .tx small{display:block;color:var(--muted);font-size:12px}
+.pos{color:var(--green);font-weight:650}.neg{color:var(--red);font-weight:650}
+
+/* bottoni */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:14px;font-weight:650;background:var(--pri);color:#fff;font-size:15px}
+.btn.soft{background:var(--pri-soft);color:var(--pri-ink)}
+.btn.ghost{background:var(--surface2);color:var(--text)}
+.btn.danger{background:var(--red-soft);color:var(--red)}
+.btn.block{width:100%}
+.btn.sm{padding:9px 13px;font-size:13.5px;border-radius:12px}
+.btn:disabled{opacity:.45}
+.btnrow{display:flex;gap:10px}.btnrow>*{flex:1}
+.fab{position:fixed;right:max(16px,calc(50% - 304px));bottom:calc(84px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:19px;background:linear-gradient(140deg,var(--pri),var(--pri-2));color:#fff;box-shadow:0 10px 26px rgba(14,143,132,.35);display:grid;place-items:center;z-index:5}
+.fab svg{width:26px;height:26px}
+
+/* empty */
+.empty{text-align:center;padding:36px 20px;color:var(--muted)}
+.empty .ei{width:72px;height:72px;margin:0 auto 14px;border-radius:24px;background:var(--pri-soft);color:var(--pri);display:grid;place-items:center}
+.empty .ei svg{width:34px;height:34px}
+.empty h3{color:var(--text);margin:0 0 6px;font-size:17px}
+.empty p{margin:0 0 18px;font-size:14px}
+
+/* sheet */
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none}
+.sheet-bg{position:absolute;inset:0;background:rgba(5,20,20,.45);animation:fade .2s}
+.sheet-panel{position:relative;width:100%;max-width:640px;max-height:92vh;background:var(--bg);border-radius:24px 24px 0 0;display:flex;flex-direction:column;animation:up .25s cubic-bezier(.2,.8,.2,1)}
+.sheet-head{padding:10px 18px 6px;text-align:center}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
+.sheet-head h2{margin:0;font-size:18px;letter-spacing:-.01em}
+.sheet-head p{margin:3px 0 0;font-size:13px;color:var(--muted)}
+.sheet-body{padding:10px 18px 14px;overflow-y:auto;flex:1}
+.sheet-foot{padding:10px 18px calc(14px + env(safe-area-inset-bottom));display:flex;gap:10px;border-top:1px solid var(--line)}
+.sheet-foot>*{flex:1}
+@keyframes up{from{transform:translateY(40px);opacity:.4}}
+@keyframes fade{from{opacity:0}}
+
+/* form */
+.f{margin-bottom:14px}
+.f>label,.lbl{display:block;font-size:12.5px;font-weight:650;color:var(--muted);margin:0 0 6px 2px}
+.f input,.f select,.f textarea,.inp{width:100%;padding:12px 14px;border-radius:13px;border:1.5px solid var(--line);background:var(--surface);color:var(--text);font-size:16px;outline:none;transition:border-color .15s}
+.f input:focus,.f select:focus,.f textarea:focus,.inp:focus{border-color:var(--pri)}
+.f textarea{min-height:70px;resize:vertical}
+.f .hint{font-size:12px;color:var(--muted);margin:5px 2px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:grid;grid-template-columns:repeat(var(--n,4),1fr);background:var(--surface2);border-radius:13px;padding:3px;gap:2px}
+.seg button{padding:9px 4px;border-radius:10px;font-size:12.5px;font-weight:650;color:var(--muted);text-align:center}
+.seg button.on{background:var(--surface);color:var(--pri-ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.toggles{display:flex;gap:7px;flex-wrap:wrap}
+.tg{padding:8px 12px;border-radius:11px;background:var(--surface);border:1.5px solid var(--line);font-size:13.5px;font-weight:600;color:var(--muted)}
+.tg.on{border-color:var(--pri);background:var(--pri-soft);color:var(--pri-ink)}
+.tg.round{width:40px;height:40px;padding:0;display:grid;place-items:center}
+.step{display:flex;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:13px;overflow:hidden}
+.step button{width:46px;height:46px;font-size:22px;color:var(--pri);display:grid;place-items:center;flex:none;text-align:center}
+.step input{border:0!important;text-align:center;padding:0!important;height:46px;background:transparent!important;font-weight:650;min-width:0}
+.colors{display:flex;gap:10px;flex-wrap:wrap}
+.colors button{width:34px;height:34px;border-radius:11px;background:var(--c);outline-offset:2px}
+.colors button.on{outline:2.5px solid var(--text)}
+.calc{display:flex;justify-content:space-between;padding:11px 14px;border-radius:13px;background:var(--pri-soft);color:var(--pri-ink);font-size:13.5px;font-weight:600;margin-bottom:14px}
+
+/* inventario / riordino */
+.inv{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:13px 14px}
+.inv-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.inv-top .nm{font-weight:650}
+.inv-top .ds{font-size:12.5px;color:var(--muted)}
+.inv-in{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:center;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.inv-in .inp{padding:9px 10px;text-align:center;font-weight:650}
+.inv-in .eq{text-align:center;font-weight:700;color:var(--text);font-size:15px}
+.inv-lb{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;font-size:11px;color:var(--muted);text-align:center;margin-top:4px}
+.ri{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.ri:last-child{border-bottom:0}
+.ck{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;flex:none;color:transparent}
+.ck.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.ck svg{width:16px;height:16px;stroke-width:2.6}
+.ri .bx{flex:1;min-width:0}
+.ri .nm{font-weight:600;font-size:14.5px}
+.ri .ds{font-size:12.5px;color:var(--muted)}
+.mini-step{display:flex;align-items:center;gap:4px;flex:none}
+.mini-step button{width:30px;height:30px;border-radius:9px;background:var(--surface2);font-size:17px;color:var(--pri);display:grid;place-items:center;text-align:center}
+.mini-step b{min-width:22px;text-align:center}
+.grp-h{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--line)}
+.grp-h .gi{width:34px;height:34px;border-radius:11px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center}
+.grp-h b{flex:1}
+.grp-f{padding:12px 14px;display:flex;gap:8px}
+.grp-f>*{flex:1}
+details.inv-s{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:0 14px}
+details.inv-s summary{list-style:none;padding:13px 0;display:flex;justify-content:space-between;cursor:pointer;font-weight:600;font-size:14px}
+details.inv-s summary::-webkit-details-marker{display:none}
+details.inv-s .ln{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-top:1px solid var(--line)}
+details.inv-s[open]{padding-bottom:8px}
+
+/* settings */
+.set{display:flex;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid var(--line);width:100%}
+.set:last-child{border-bottom:0}
+.set .si{width:34px;height:34px;border-radius:11px;background:var(--pri-soft);color:var(--pri);display:grid;place-items:center;flex:none}
+.set .bx{flex:1;min-width:0}
+.set .bx b{display:block;font-weight:600;font-size:14.5px}
+.set .bx small{color:var(--muted);font-size:12.5px}
+.set .vl{color:var(--muted);font-size:14px;font-weight:550}
+.sw{width:46px;height:28px;border-radius:14px;background:var(--line);position:relative;flex:none;transition:.2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.2s}
+.sw.on{background:var(--pri)}.sw.on::after{left:21px}
+
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 16px;border-radius:14px;font-size:14px;font-weight:550;z-index:30;display:flex;gap:12px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:up .25s;max-width:92vw}
+.toast button{color:var(--pri-2);font-weight:700}
+[data-theme=dark] .toast button{color:var(--pri)}
+.foot-note{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<nav class="tabs"><div class="in" id="tabs"></div></nav>
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-bg" data-a="chiudi"></div>
+  <div class="sheet-panel">
+    <div class="sheet-head"><div class="grab"></div><h2 id="sh-t"></h2><p id="sh-p" hidden></p></div>
+    <div class="sheet-body" id="sh-b"></div>
+    <div class="sheet-foot" id="sh-f"></div>
+  </div>
+</div>
+<script src="core.js"></script>
+<script>
+'use strict';
+/* ---------- utilità ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const num = v => { if (v === '' || v == null) return null; const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; };
+const COLORI = ['#0E8F84','#2F6BD6','#7C5CE0','#D2457A','#D98A0B','#1C9460','#0891B2','#B5532E'];
+const GIORNI = ['L','M','M','G','V','S','D'];
+const GIORNI_L = ['lun','mar','mer','gio','ven','sab','dom'];
+const MOMENTI = ['Mattina','Pranzo','Pomeriggio','Sera','Notte'];
+
+function fmtN(n) { if (n == null || !isFinite(n)) return '–'; return (Math.round(n * 100) / 100).toLocaleString('it-IT', { maximumFractionDigits: 2 }); }
+function fmtQ(n) { if (n == null || n <= 0) return '0'; return fmtN(n >= 20 ? Math.floor(n) : Math.floor(n * 4 + 1e-6) / 4); }
+function unita(t, n) { const f = FORME[t.forma] || FORME.altro; return (n != null && n > 0 && n <= 1) ? f.s : f.p; }
+function fmtD(ts, anno) { if (ts == null) return '–'; const d = new Date(ts); const o = { day: 'numeric', month: 'short' }; if (anno || d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric'; return d.toLocaleDateString('it-IT', o).replace('.', ''); }
+function fmtDT(ts) { const d = new Date(ts); return fmtD(ts) + ' · ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); }
+function rel(ts) { const g = Math.round((oggi0(new Date(ts)) - oggi0()) / DAY); if (g === 0) return 'oggi'; if (g === 1) return 'domani'; if (g === -1) return 'ieri'; return g > 0 ? `tra ${g} giorni` : `${-g} giorni fa`; }
+function ggTxt(g) { if (!isFinite(g)) return '—'; return String(Math.max(0, Math.round((oggi0(new Date(Date.now() + g * DAY)) - oggi0()) / DAY))); }
+function persona(id) { return db.persone.find(p => p.id === id); }
+function terapia(id) { return db.terapie.find(t => t.id === id); }
+function colore(p) { return p ? p.colore : '#999'; }
+function iniziali(n) { return (n || '?').trim().charAt(0).toUpperCase(); }
+
+const IC = {
+  home:'<rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  clip:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/>',
+  box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+  sliders:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  left:'<path d="M15 18l-6-6 6-6"/>', right:'<path d="M9 18l6-6-6-6"/>',
+  pill:'<path d="M10.5 20.5a5 5 0 0 1-7-7l10-10a5 5 0 0 1 7 7z"/><path d="M8.5 8.5l7 7"/>',
+  cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  alert:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  check:'<path d="M20 6L9 17l-5-5"/>',
+  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  pause:'<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+  play:'<path d="M6 4l14 8-14 8z"/>',
+  flag:'<path d="M4 22V4M4 4h13l-2 4 2 4H4"/>',
+  down:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+  up:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  steth:'<path d="M5 3v6a5 5 0 0 0 10 0V3"/><path d="M10 14v2a5 5 0 0 0 10 0v-3"/><circle cx="20" cy="11" r="2"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  pm:'<path d="M12 4v8M8 8h8M8 18h8"/>',
+  count:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+  cross:'<path d="M18 6L6 18M6 6l12 12"/>',
+  hourglass:'<path d="M6 2h12M6 22h12M7 2v4l5 6 5-6V2M7 22v-4l5-6 5 6v4"/>',
+  refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>'
+};
+const ic = (n, c = '') => `<svg class="i ${c}" viewBox="0 0 24 24">${IC[n] || ''}</svg>`;
+
+/* ---------- stato ---------- */
+let db = null;
+let view = { name: 'home' };
+let stack = [];
+let filtro = 'tutti';
+let sheetOpen = false, ignorePop = 0, sheetOk = null;
+const selR = {};  // selezione riordino
+
+function nuovoDb() { return { versione: 1, persone: [], terapie: [], movimenti: [], impostazioni: impostazioniDefault() }; }
+function migra(d) {
+  d.persone ||= []; d.terapie ||= []; d.movimenti ||= [];
+  d.impostazioni = Object.assign(impostazioniDefault(), d.impostazioni || {});
+  return d;
+}
+let saveTimer = null;
+function salva() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => IDB.set('stato', db).catch(e => toast('Errore di salvataggio: ' + e.message)), 80);
+  aggiornaBadge();
+}
+function mov(tid, tipo, extra = {}) { db.movimenti.push(Object.assign({ id: uid(), tid, tipo, data: Date.now() }, extra)); }
+function fissa(t, now = Date.now()) { t.scortaBase = Math.max(0, stima(t, now)); t.dataBase = now; }
+
+/* ---------- navigazione ---------- */
+function push(v) { stack.push(view); view = v; history.pushState({ d: stack.length }, ''); render(); scrollTo(0, 0); }
+function tab(name) {
+  if (stack.length) { ignorePop++; history.go(-stack.length); stack = []; }
+  view = { name }; render(); scrollTo(0, 0);
+}
+addEventListener('popstate', () => {
+  if (ignorePop > 0) { ignorePop--; return; }
+  if (sheetOpen) { chiudiSheet(true); return; }
+  if (stack.length) { view = stack.pop(); render(); }
+});
+
+/* ---------- tema ---------- */
+function applicaTema() {
+  const m = db.impostazioni.tema;
+  const dark = m === 'scuro' || (m === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  $('#meta-theme').content = dark ? '#0A1413' : '#F3F7F7';
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => db && applicaTema());
+
+/* ---------- render ---------- */
+const TABS = [['home','home','Oggi'],['persone','users','Persone'],['riordino','clip','Riordino'],['inventario','box','Inventario'],['altro','sliders','Altro']];
+function tabAttiva() { const n = view.name; if (n === 'persona' || n === 'terapia') return stack.length ? (stack[0].name) : 'persone'; return n; }
+function render() {
+  const nDa = daGestire(db).length;
+  const att = tabAttiva();
+  $('#tabs').innerHTML = TABS.map(([k, i, l]) => `<button class="${att === k ? 'on' : ''}" data-a="tab" data-id="${k}"><span class="pb">${ic(i)}</span>${l}${k === 'riordino' && nDa ? `<span class="nb">${nDa}</span>` : ''}</button>`).join('');
+  const fn = { home: vHome, persone: vPersone, persona: vPersona, terapia: vTerapia, riordino: vRiordino, inventario: vInventario, altro: vAltro }[view.name] || vHome;
+  $('#app').innerHTML = fn();
+}
+function header(title, sub, opts = {}) {
+  return `<header class="top ${opts.small ? 'small' : ''}">
+    ${opts.back ? `<button class="icon-btn" data-a="back" aria-label="Indietro">${ic('left')}</button>` : `<div class="brand">${ic('pill')}</div>`}
+    <div class="tt"><h1>${title}</h1>${sub ? `<div class="sub">${sub}</div>` : ''}</div>
+    ${opts.right || ''}</header>`;
+}
+
+function medCard(t, a, showPers = true) {
+  const p = persona(t.pid);
+  const f = FORME[t.forma] || FORME.altro;
+  const scala = (a.soglia + db.impostazioni.giorniGiallo) * 2.5;
+  let pct = a.livello === 'ok' ? 100 : isFinite(a.giorni) ? Math.min(100, a.giorni / scala * 100) : 100;
+  if (a.livello === 'esaurito') pct = 0; else pct = Math.max(pct, 4);
+  let destra;
+  if (t.stato === 'sospesa') destra = `<span class="tag">Sospesa</span>`;
+  else if (t.stato === 'conclusa') destra = `<span class="tag">Conclusa</span>`;
+  else if (a.rate === 0) destra = `<b>${fmtQ(a.stima)}</b><small>${esc(unita(t, a.stima))}</small>`;
+  else if (a.copreFine) destra = `<b style="color:var(--pri)">${ic('check')}</b><small>fino a fine</small>`;
+  else destra = `<b>${ggTxt(a.giorni)}</b><small>${ggTxt(a.giorni) === '1' ? 'giorno' : 'giorni'}</small>`;
+  const tags = [];
+  if (t.stato === 'attiva') {
+    if (a.richiesta) tags.push(`<span class="tag blue">${ic('clock','s')} Ricetta richiesta ${fmtD(t.riordino.data)}</span>`);
+    else if (a.livello === 'esaurito') tags.push(`<span class="tag red">Esaurito</span>`);
+    else if (a.livello === 'rosso') tags.push(`<span class="tag red">${a.rate ? 'Chiedi la ricetta ora' : 'Sotto la scorta minima'}</span>`);
+    else if (a.livello === 'giallo') tags.push(`<span class="tag amber">Ricetta entro ${fmtD(a.entro)}</span>`);
+  }
+  const sub = t.stato === 'attiva' && a.rate > 0 && !a.copreFine && a.esaurimento
+    ? `finisce ${fmtD(a.esaurimento)}`
+    : t.stato === 'conclusa' ? `${fmtD(parseData(t.inizio))} → ${t.fine ? fmtD(parseData(t.fine)) : '–'}`
+    : `${fmtQ(a.stima)} ${esc(unita(t, a.stima))}`;
+  return `<button class="med lv-${a.livello}" data-a="apriTerapia" data-id="${t.id}">
+    <div class="med-ico">${ic('pill')}</div>
+    <div class="med-body">
+      <div class="med-nome">${esc(t.nome)} ${t.dosaggio ? `<span class="dos">${esc(t.dosaggio)}</span>` : ''}</div>
+      <div class="med-sub">${showPers && p ? `<span class="dot" style="--c:${p.colore}"></span>${esc(p.nome)} · ` : ''}${sub}</div>
+      ${t.stato === 'attiva' ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}
+      ${tags.length ? `<div class="med-tags">${tags.join('')}</div>` : ''}
+    </div>
+    <div class="med-gg">${destra}</div></button>`;
+}
+function ordina(list) { return list.sort((x, y) => RANK[x.a.livello] - RANK[y.a.livello] || x.a.giorni - y.a.giorni || x.t.nome.localeCompare(y.t.nome)); }
+
+/* ---------- vista: Oggi ---------- */
+function vHome() {
+  const oggi = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+  let h = header('Farmacia', oggi.charAt(0).toUpperCase() + oggi.slice(1));
+  if (!db.persone.length) {
+    return h + `<div class="empty"><div class="ei">${ic('users')}</div><h3>Benvenuto in Farmacia</h3>
+      <p>Aggiungi i familiari di cui segui le terapie, poi i loro farmaci con la frequenza e la scorta che avete in casa.</p>
+      <button class="btn" data-a="nuovaPersona">${ic('plus')} Aggiungi una persona</button></div>`;
+  }
+  const now = Date.now();
+  const imp = db.impostazioni;
+  const attive = db.terapie.filter(t => t.stato === 'attiva' && (filtro === 'tutti' || t.pid === filtro));
+  const items = ordina(attive.map(t => ({ t, a: analisi(t, imp, now) })));
+  const urg = items.filter(x => ['esaurito', 'rosso'].includes(x.a.livello) && !x.a.richiesta);
+  const attesa = items.filter(x => x.a.richiesta);
+  const prossimo = items.filter(x => x.a.rate > 0 && !x.a.copreFine && x.a.esaurimento).sort((a, b) => a.a.esaurimento - b.a.esaurimento)[0];
+
+  if (urg.length) {
+    h += `<button class="hero warn" data-a="tab" data-id="riordino"><div class="hi">${ic('alert')}</div><div><b>${urg.length === 1 ? '1 farmaco da riordinare' : urg.length + ' farmaci da riordinare'}</b><span>${esc(urg.slice(0, 2).map(x => x.t.nome).join(', '))}${urg.length > 2 ? '…' : ''} · apri la lista per il medico</span></div></button>`;
+  } else {
+    h += `<div class="hero"><div class="hi">${ic('shield')}</div><div><b>Scorte sotto controllo</b><span>${prossimo ? `Il primo a finire: ${esc(prossimo.t.nome)}, ${fmtD(prossimo.a.esaurimento)}` : 'Nessun farmaco in esaurimento'}</span></div></div>`;
+  }
+  h += `<div class="tiles">
+    <div class="tile"><b>${attive.length}</b><span>terapie attive</span></div>
+    <div class="tile"><b style="color:${urg.length ? 'var(--red)' : 'inherit'}">${urg.length}</b><span>da riordinare</span></div>
+    <div class="tile"><b style="color:${attesa.length ? 'var(--blue)' : 'inherit'}">${attesa.length}</b><span>ricette attese</span></div></div>`;
+
+  // promemoria
+  const banners = [];
+  const giorniInv = imp.ultimoInventario ? (now - imp.ultimoInventario) / DAY : Infinity;
+  if (db.terapie.some(t => t.stato === 'attiva') && giorniInv > imp.promemoriaInventario) {
+    banners.push(`<button class="banner" data-a="tab" data-id="inventario"><div class="bi">${ic('count')}</div><div class="bx"><b>È ora di un inventario</b><span class="muted">${imp.ultimoInventario ? 'Ultimo ' + rel(imp.ultimoInventario) : 'Non ne hai ancora fatto uno'} · conta le confezioni in casa</span></div>${ic('right')}</button>`);
+  }
+  for (const m of lottiInScadenza(now)) {
+    const t = terapia(m.tid); const p = persona(t.pid);
+    const scaduto = m.scadenza < now;
+    banners.push(`<div class="banner ${scaduto ? 'red' : ''}"><div class="bi">${ic('hourglass')}</div><div class="bx"><b>${esc(t.nome)}${p ? ' · ' + esc(p.nome) : ''}</b><span class="muted">Confezione caricata il ${fmtD(m.data)} ${scaduto ? 'scaduta' : 'scade'} il ${fmtD(m.scadenza, true)}</span></div><button class="btn sm ghost" data-a="lottoOk" data-id="${m.id}">Ok</button></div>`);
+  }
+  const giorniBk = imp.ultimoBackup ? (now - imp.ultimoBackup) / DAY : Infinity;
+  if (db.terapie.length && giorniBk > 30) {
+    banners.push(`<button class="banner blue" data-a="tab" data-id="altro"><div class="bi">${ic('down')}</div><div class="bx"><b>Fai un backup</b><span class="muted">I dati sono solo su questo telefono${imp.ultimoBackup ? ' · ultimo ' + rel(imp.ultimoBackup) : ''}</span></div>${ic('right')}</button>`);
+  }
+  if (banners.length) h += `<div class="stack" style="margin-top:12px">${banners.join('')}</div>`;
+
+  if (db.persone.length > 1) {
+    h += `<div class="chips"><button class="chip ${filtro === 'tutti' ? 'on' : ''}" data-a="filtro" data-id="tutti">Tutti</button>` +
+      db.persone.map(p => `<button class="chip ${filtro === p.id ? 'on' : ''}" data-a="filtro" data-id="${p.id}"><span class="dot" style="--c:${p.colore}"></span>${esc(p.nome)}</button>`).join('') + `</div>`;
+  }
+  if (!items.length) {
+    h += `<div class="empty"><div class="ei">${ic('pill')}</div><h3>Nessuna terapia attiva</h3><p>Apri una persona e aggiungi i farmaci che assume.</p><button class="btn soft" data-a="tab" data-id="persone">Vai alle persone</button></div>`;
+    return h;
+  }
+  const att = items.filter(x => ['esaurito', 'rosso', 'giallo'].includes(x.a.livello));
+  const ok = items.filter(x => !['esaurito', 'rosso', 'giallo'].includes(x.a.livello));
+  if (att.length) h += `<div class="sec">Da tenere d'occhio <small>${att.length}</small></div><div class="stack">${att.map(x => medCard(x.t, x.a, filtro === 'tutti')).join('')}</div>`;
+  if (ok.length) h += `<div class="sec">Scorte a posto <small>${ok.length}</small></div><div class="stack">${ok.map(x => medCard(x.t, x.a, filtro === 'tutti')).join('')}</div>`;
+  return h;
+}
+function lottiInScadenza(now) {
+  return db.movimenti.filter(m => m.tipo === 'carico' && m.scadenza && !m.scadOk && m.scadenza - now < 45 * DAY && m.scadenza - now > -60 * DAY)
+    .filter(m => { const t = terapia(m.tid); return t && t.stato !== 'conclusa'; })
+    .sort((a, b) => a.scadenza - b.scadenza);
+}
+
+/* ---------- vista: Persone ---------- */
+function vPersone() {
+  let h = header('Persone', `${db.persone.length} ${db.persone.length === 1 ? 'familiare' : 'familiari'}`);
+  if (!db.persone.length) return h + `<div class="empty"><div class="ei">${ic('users')}</div><h3>Nessuna persona</h3><p>Aggiungi i familiari di cui segui le terapie.</p><button class="btn" data-a="nuovaPersona">${ic('plus')} Aggiungi</button></div>`;
+  const now = Date.now();
+  h += `<div class="stack">` + db.persone.map(p => {
+    const ts = db.terapie.filter(t => t.pid === p.id && t.stato === 'attiva');
+    const an = ts.map(t => analisi(t, db.impostazioni, now));
+    const r = an.filter(a => ['esaurito', 'rosso'].includes(a.livello) && !a.richiesta).length;
+    const g = an.filter(a => a.livello === 'giallo').length;
+    return `<button class="pers" data-a="apriPersona" data-id="${p.id}"><div class="av" style="--c:${p.colore}">${esc(iniziali(p.nome))}</div>
+      <div style="flex:1;min-width:0"><div class="nm">${esc(p.nome)}</div><div class="ds">${p.relazione ? esc(p.relazione) + ' · ' : ''}${ts.length} ${ts.length === 1 ? 'terapia attiva' : 'terapie attive'}</div></div>
+      ${r ? `<span class="tag red">${r} da riordinare</span>` : g ? `<span class="tag amber">${g} in arrivo</span>` : ts.length ? `<span class="tag green">${ic('check','s')}</span>` : ''}
+      ${ic('right')}</button>`;
+  }).join('') + `</div><button class="fab" data-a="nuovaPersona" aria-label="Nuova persona">${ic('plus')}</button>`;
+  return h;
+}
+
+function vPersona() {
+  const p = persona(view.id);
+  if (!p) { view = { name: 'persone' }; return vPersone(); }
+  const now = Date.now();
+  const ts = db.terapie.filter(t => t.pid === p.id);
+  const att = ordina(ts.filter(t => t.stato === 'attiva').map(t => ({ t, a: analisi(t, db.impostazioni, now) })));
+  const sos = ts.filter(t => t.stato === 'sospesa').map(t => ({ t, a: analisi(t, db.impostazioni, now) }));
+  const con = ts.filter(t => t.stato === 'conclusa').sort((a, b) => (b.fine || '').localeCompare(a.fine || '')).map(t => ({ t, a: analisi(t, db.impostazioni, now) }));
+  let h = header(esc(p.nome), [p.relazione, p.medico ? 'Medico: ' + p.medico : ''].filter(Boolean).map(esc).join(' · '), { back: true, small: true, right: `<button class="icon-btn" data-a="modificaPersona" data-id="${p.id}" aria-label="Modifica">${ic('edit')}</button>` });
+  if (p.note) h += `<div class="card" style="font-size:14px"><span class="lbl" style="margin:0 0 4px">Note</span>${esc(p.note).replace(/\n/g, '<br>')}</div>`;
+  h += `<div class="sec">Terapie in corso <small>${att.length}</small></div>`;
+  h += att.length ? `<div class="stack">${att.map(x => medCard(x.t, x.a, false)).join('')}</div>`
+    : `<div class="card muted" style="text-align:center;font-size:14px">Nessuna terapia in corso</div>`;
+  if (sos.length) h += `<div class="sec">Sospese <small>${sos.length}</small></div><div class="stack">${sos.map(x => medCard(x.t, x.a, false)).join('')}</div>`;
+  if (con.length) h += `<div class="sec">Storico terapie concluse <small>${con.length}</small></div><div class="stack">${con.map(x => medCard(x.t, x.a, false)).join('')}</div>`;
+  h += `<button class="fab" data-a="nuovaTerapia" data-id="${p.id}" aria-label="Nuova terapia">${ic('plus')}</button>`;
+  return h;
+}
+
+/* ---------- vista: Terapia ---------- */
+function posologia(t) {
+  const s = t.schema || {}; const f = FORME[t.forma] || FORME.altro;
+  if (s.tipo === 'bisogno') return `Al bisogno${s.stimaSettimana ? ` · circa ${fmtN(s.stimaSettimana)} ${s.stimaSettimana <= 1 ? f.s : f.p} a settimana` : ''}`;
+  const d = `${fmtN(t.dose)} ${t.dose <= 1 ? f.s : f.p}`;
+  const v = s.volte || 1;
+  let fr;
+  if (s.tipo === 'giornaliero') fr = v === 1 ? 'una volta al giorno' : `${v} volte al giorno`;
+  else if (s.tipo === 'ogniN') fr = `${v > 1 ? v + ' volte ' : ''}ogni ${s.ogniN} giorni`;
+  else if (s.tipo === 'settimanale') fr = `${v > 1 ? v + ' volte, ' : ''}${(s.giorni || []).length === 7 ? 'tutti i giorni' : (s.giorni || []).map(g => GIORNI_L[g]).join(', ')}`;
+  return `${d} · ${fr}${s.momenti && s.momenti.length ? ` (${s.momenti.join(', ').toLowerCase()})` : ''}`;
+}
+const MOV_IC = { iniziale: 'box', carico: 'down', inventario: 'count', correzione: 'pm', variazione: 'edit', sospesa: 'pause', ripresa: 'play', conclusa: 'flag', riattivata: 'refresh', richiesta: 'steth' };
+function movTesto(m, t) {
+  const u = n => esc(unita(t, Math.abs(n)));
+  switch (m.tipo) {
+    case 'iniziale': return `Scorta iniziale: ${fmtN(m.q)} ${u(m.q)}`;
+    case 'carico': return `Caricate ${m.conf ? m.conf + (m.conf === 1 ? ' confezione' : ' confezioni') + ' · ' : ''}<span class="pos">+${fmtN(m.q)}</span> ${u(m.q)}${m.scadenza ? `<small>Scadenza ${fmtD(m.scadenza, true)}</small>` : ''}`;
+    case 'inventario': return `Inventario: contate ${fmtN(m.q)} ${u(m.q)} <small>Stima ${fmtN(Math.max(0, m.stimaPrima))} · differenza <span class="${Math.abs(m.diff) < .01 ? '' : m.diff > 0 ? 'pos' : 'neg'}">${m.diff > 0 ? '+' : ''}${fmtN(m.diff)}</span></small>`;
+    case 'correzione': return `Correzione <span class="${m.q > 0 ? 'pos' : 'neg'}">${m.q > 0 ? '+' : ''}${fmtN(m.q)}</span> ${u(m.q)}`;
+    case 'variazione': return `Terapia modificata<small>${esc(m.da)} → ${esc(m.a)}</small>`;
+    case 'sospesa': return 'Terapia sospesa';
+    case 'ripresa': return 'Terapia ripresa';
+    case 'conclusa': return 'Terapia conclusa';
+    case 'riattivata': return 'Terapia riattivata';
+    case 'richiesta': return `Ricetta chiesta al medico${m.conf ? ` (${m.conf} conf.)` : ''}`;
+    default: return m.tipo;
+  }
+}
+function vTerapia() {
+  const t = terapia(view.id);
+  if (!t) { setTimeout(() => history.back(), 0); return header('Terapia non trovata', '', { back: true, small: true }); }
+  const p = persona(t.pid);
+  const a = analisi(t, db.impostazioni);
+  const f = FORME[t.forma] || FORME.altro;
+  let h = header(esc(t.nome) + (t.dosaggio ? ` <span class="muted" style="font-weight:500;font-size:15px">${esc(t.dosaggio)}</span>` : ''),
+    `${p ? `<span class="dot" style="--c:${p.colore};display:inline-block;margin-right:5px"></span>${esc(p.nome)} · ` : ''}${esc(f.nome)}`,
+    { back: true, small: true, right: `<button class="icon-btn" data-a="modificaTerapia" data-id="${t.id}" aria-label="Modifica">${ic('edit')}</button>` });
+
+  const st = { esaurito: ['red', 'Esaurito'], rosso: ['red', a.rate ? 'Da riordinare subito' : 'Sotto la scorta minima'], giallo: ['amber', 'Riordino a breve'], verde: ['green', 'Scorta sufficiente'], ok: ['pri', a.copreFine ? 'Basta fino a fine terapia' : 'Al bisogno'], inattiva: ['', t.stato === 'sospesa' ? 'Terapia sospesa' : 'Terapia conclusa'] }[a.livello];
+  h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"><span class="tag ${st[0]}">${st[1]}</span>${a.richiesta ? `<span class="tag blue">${ic('clock','s')} Ricetta richiesta ${rel(t.riordino.data)}</span>` : ''}</div>`;
+  const conf = t.unitaConf ? a.stima / t.unitaConf : null;
+  h += `<div class="stats">
+    <div class="stat"><span>Scorta stimata</span><b>${fmtQ(a.stima)} <small>${esc(unita(t, a.stima))}</small></b>${conf != null ? `<small>≈ ${fmtN(Math.max(0, Math.floor(conf * 10) / 10))} confezioni</small>` : ''}</div>
+    <div class="stat"><span>Giorni di copertura</span><b>${t.stato !== 'attiva' ? '—' : a.rate ? ggTxt(a.giorni) : '—'}</b><small>${a.rate ? fmtN(a.rate) + ' ' + esc(unita(t, a.rate)) + ' al giorno' : 'consumo non fisso'}</small></div>
+    <div class="stat"><span>Finisce il</span><b>${t.stato === 'attiva' && a.esaurimento && !a.copreFine ? fmtD(a.esaurimento) : '—'}</b><small>${t.stato === 'attiva' && a.esaurimento && !a.copreFine ? rel(a.esaurimento) : a.copreFine ? 'copre la terapia' : ''}</small></div>
+    <div class="stat"><span>Chiedi la ricetta entro</span><b style="${a.entro && a.entro < Date.now() ? 'color:var(--red)' : ''}">${t.stato === 'attiva' && a.entro && !a.copreFine ? (a.entro < Date.now() ? 'Subito' : fmtD(a.entro)) : '—'}</b><small>${a.soglia} giorni di anticipo</small></div></div>`;
+
+  // azioni
+  const acts = [];
+  acts.push(`<button class="act" data-a="carico" data-id="${t.id}"><span class="ai">${ic('down')}</span>Carica confezioni</button>`);
+  acts.push(`<button class="act" data-a="conta" data-id="${t.id}"><span class="ai">${ic('count')}</span>Conta scorta</button>`);
+  acts.push(`<button class="act" data-a="correggi" data-id="${t.id}"><span class="ai">${ic('pm')}</span>Correggi</button>`);
+  if (t.stato === 'attiva') {
+    acts.push(a.richiesta ? `<button class="act blue" data-a="annullaRichiesta" data-id="${t.id}"><span class="ai">${ic('cross')}</span>Annulla richiesta</button>`
+      : `<button class="act blue" data-a="richiedi" data-id="${t.id}"><span class="ai">${ic('steth')}</span>Ricetta richiesta</button>`);
+    acts.push(`<button class="act" data-a="sospendi" data-id="${t.id}"><span class="ai">${ic('pause')}</span>Sospendi</button>`);
+    acts.push(`<button class="act" data-a="concludi" data-id="${t.id}"><span class="ai">${ic('flag')}</span>Concludi</button>`);
+  } else if (t.stato === 'sospesa') {
+    acts.push(`<button class="act" data-a="riprendi" data-id="${t.id}"><span class="ai">${ic('play')}</span>Riprendi</button>`);
+    acts.push(`<button class="act" data-a="concludi" data-id="${t.id}"><span class="ai">${ic('flag')}</span>Concludi</button>`);
+    acts.push(`<button class="act red" data-a="eliminaTerapia" data-id="${t.id}"><span class="ai">${ic('trash')}</span>Elimina</button>`);
+  } else {
+    acts.push(`<button class="act" data-a="riattiva" data-id="${t.id}"><span class="ai">${ic('refresh')}</span>Riattiva</button>`);
+    acts.push(`<button class="act red" data-a="eliminaTerapia" data-id="${t.id}"><span class="ai">${ic('trash')}</span>Elimina</button>`);
+  }
+  h += `<div class="sec">Azioni</div><div class="actions">${acts.join('')}</div>`;
+
+  h += `<div class="sec">Terapia</div><div class="rows">
+    <div class="row"><span>Posologia</span><span>${esc(posologia(t))}</span></div>
+    <div class="row"><span>Periodo</span><span>${t.inizio ? 'dal ' + fmtD(parseData(t.inizio), true) : ''}${t.fine ? ' al ' + fmtD(parseData(t.fine), true) : t.inizio ? ', continuativa' : 'continuativa'}</span></div>
+    <div class="row"><span>Confezione</span><span>${t.unitaConf ? fmtN(t.unitaConf) + ' ' + esc(unita(t, t.unitaConf)) : '–'}</span></div>
+    <div class="row"><span>Medico</span><span>${esc(t.medico || '–')}</span></div>
+    ${t.schema.tipo === 'bisogno' ? `<div class="row"><span>Avvisa sotto</span><span>${t.scortaMin != null ? fmtN(t.scortaMin) + ' ' + esc(unita(t, t.scortaMin)) : '–'}</span></div>` : ''}
+    ${t.note ? `<div class="row"><span>Note</span><span style="font-weight:400">${esc(t.note)}</span></div>` : ''}
+    ${t.stato === 'attiva' ? `<button class="row" data-a="eliminaTerapia" data-id="${t.id}"><span style="color:var(--red)">Elimina terapia e storico</span><span>${ic('trash','s')}</span></button>` : ''}
+  </div>`;
+
+  const ms = db.movimenti.filter(m => m.tid === t.id).sort((x, y) => y.data - x.data);
+  if (ms.length) h += `<div class="sec">Storico <small>${ms.length}</small></div><div class="tl">${ms.slice(0, 40).map(m => `<div class="tl-i"><div class="td">${ic(MOV_IC[m.tipo] || 'info')}</div><div class="tx">${movTesto(m, t)}<small>${fmtDT(m.data)}${m.note ? ' · ' + esc(m.note) : ''}</small></div></div>`).join('')}</div>`;
+  return h;
+}
+
+/* ---------- vista: Riordino ---------- */
+function suggerisciConf(t, a) {
+  if (!t.unitaConf) return 1;
+  if (!a.rate) return 1;
+  let gg = db.impostazioni.copertura;
+  if (t.fine) gg = Math.min(gg, Math.max(1, (parseData(t.fine) + DAY - Date.now()) / DAY));
+  return Math.max(1, Math.ceil((a.rate * gg - Math.max(0, a.stima)) / t.unitaConf));
+}
+function vRiordino() {
+  const now = Date.now();
+  let h = header('Riordino', 'Ricette da chiedere al medico');
+  const tutte = db.terapie.filter(t => t.stato === 'attiva').map(t => ({ t, a: analisi(t, db.impostazioni, now) }));
+  const da = ordina(tutte.filter(x => ['esaurito', 'rosso', 'giallo'].includes(x.a.livello) && !x.a.richiesta));
+  const att = tutte.filter(x => x.a.richiesta).sort((x, y) => x.t.riordino.data - y.t.riordino.data);
+  if (!da.length && !att.length) {
+    return h + `<div class="empty"><div class="ei">${ic('check')}</div><h3>Niente da chiedere</h3><p>Quando un farmaco si avvicina alla soglia di riordino comparirà qui, raggruppato per medico.</p></div>`;
+  }
+  if (da.length) {
+    const gruppi = {};
+    for (const x of da) {
+      if (!selR[x.t.id]) selR[x.t.id] = { sel: x.a.livello !== 'giallo', conf: suggerisciConf(x.t, x.a) };
+      const k = (x.t.medico || '').trim() || 'Medico non indicato';
+      (gruppi[k] ||= []).push(x);
+    }
+    h += `<div class="sec">Da chiedere</div><div class="stack">`;
+    for (const [med, list] of Object.entries(gruppi)) {
+      const n = list.filter(x => selR[x.t.id].sel).length;
+      h += `<div class="rows"><div class="grp-h"><div class="gi">${ic('steth','s')}</div><b>${esc(med)}</b><span class="muted" style="font-size:13px">${list.length}</span></div>` +
+        list.map(x => {
+          const p = persona(x.t.pid); const s = selR[x.t.id];
+          const quando = x.a.livello === 'esaurito' ? '<span class="neg">esaurito</span>' : x.a.rate ? `finisce ${fmtD(x.a.esaurimento)}` : `restano ${fmtQ(x.a.stima)}`;
+          return `<div class="ri"><button class="ck ${s.sel ? 'on' : ''}" data-a="selR" data-id="${x.t.id}">${ic('check')}</button>
+            <div class="bx"><div class="nm">${esc(x.t.nome)} ${x.t.dosaggio ? `<span class="muted" style="font-weight:400">${esc(x.t.dosaggio)}</span>` : ''}</div>
+            <div class="ds">${p ? esc(p.nome) + ' · ' : ''}${quando}</div></div>
+            <div class="mini-step"><button data-a="confR" data-id="${x.t.id}" data-d="-1">−</button><b>${s.conf}</b><button data-a="confR" data-id="${x.t.id}" data-d="1">+</button></div></div>`;
+        }).join('') +
+        `<div class="grp-f"><button class="btn sm soft" data-a="condividi" data-id="${esc(med)}" ${n ? '' : 'disabled'}>${ic('share','s')} Invia richiesta</button><button class="btn sm" data-a="segnaRichieste" data-id="${esc(med)}" ${n ? '' : 'disabled'}>${ic('check','s')} Segna richieste</button></div></div>`;
+    }
+    h += `</div><p class="muted" style="font-size:12.5px;margin:10px 4px 0">Il numero a destra sono le confezioni da chiedere (calcolate per coprire ${db.impostazioni.copertura} giorni). Spunta solo quelle da chiedere in questo giro.</p>`;
+  }
+  if (att.length) {
+    h += `<div class="sec">Ricette chieste · in attesa di ritiro</div><div class="rows">` + att.map(x => {
+      const p = persona(x.t.pid);
+      return `<div class="ri"><div class="ck" style="border:0;background:var(--blue-soft);color:var(--blue)">${ic('clock')}</div><div class="bx"><div class="nm">${esc(x.t.nome)}</div><div class="ds">${p ? esc(p.nome) + ' · ' : ''}chiesta ${rel(x.t.riordino.data)}${x.t.riordino.conf ? ' · ' + x.t.riordino.conf + ' conf.' : ''}</div></div>
+        <button class="btn sm" data-a="ritirato" data-id="${x.t.id}">Ritirato</button></div>`;
+    }).join('') + `</div>`;
+  }
+  return h;
+}
+function testoRichiesta(med) {
+  const now = Date.now();
+  const items = db.terapie.filter(t => t.stato === 'attiva' && selR[t.id]?.sel && ((t.medico || '').trim() || 'Medico non indicato') === med)
+    .map(t => ({ t, a: analisi(t, db.impostazioni, now) })).filter(x => ['esaurito', 'rosso', 'giallo'].includes(x.a.livello) && !x.a.richiesta);
+  const perP = {};
+  for (const x of items) { const p = persona(x.t.pid); (perP[p ? p.nome : ''] ||= []).push(x); }
+  let s = 'Buongiorno, avrei bisogno delle ricette per:\n';
+  for (const [nome, l] of Object.entries(perP)) {
+    s += `\n${nome}${persona(l[0].t.pid)?.cf ? ' (CF ' + persona(l[0].t.pid).cf + ')' : ''}\n`;
+    for (const x of l) { const c = selR[x.t.id].conf; s += `• ${x.t.nome}${x.t.dosaggio ? ' ' + x.t.dosaggio : ''} – ${c} ${c === 1 ? 'confezione' : 'confezioni'}\n`; }
+  }
+  s += '\nGrazie mille.';
+  return { s, items };
+}
+
+/* ---------- vista: Inventario ---------- */
+let invFiltro = 'tutti';
+function vInventario() {
+  const now = Date.now();
+  const imp = db.impostazioni;
+  let h = header('Inventario', imp.ultimoInventario ? `Ultimo: ${fmtD(imp.ultimoInventario, true)} (${rel(imp.ultimoInventario)})` : 'Mai fatto');
+  const ts = db.terapie.filter(t => t.stato !== 'conclusa' && (invFiltro === 'tutti' || t.pid === invFiltro));
+  if (!db.terapie.some(t => t.stato !== 'conclusa')) return h + `<div class="empty"><div class="ei">${ic('box')}</div><h3>Niente da contare</h3><p>Quando avrai inserito delle terapie potrai verificare qui le scorte reali.</p></div>`;
+  h += `<div class="card" style="font-size:13.5px;display:flex;gap:12px"><div class="bi" style="width:36px;height:36px;border-radius:11px;background:var(--pri-soft);color:var(--pri);display:grid;place-items:center;flex:none">${ic('info','s')}</div><div>Conta le confezioni intere e le unità sfuse di ogni farmaco. L'app confronta il conteggio con la stima, segna la differenza e riparte dal dato reale. Lascia vuoto quello che non conti.</div></div>`;
+  if (db.persone.length > 1) h += `<div class="chips"><button class="chip ${invFiltro === 'tutti' ? 'on' : ''}" data-a="invFiltro" data-id="tutti">Tutti</button>` + db.persone.map(p => `<button class="chip ${invFiltro === p.id ? 'on' : ''}" data-a="invFiltro" data-id="${p.id}"><span class="dot" style="--c:${p.colore}"></span>${esc(p.nome)}</button>`).join('') + `</div>`;
+  const ord = ts.slice().sort((a, b) => (persona(a.pid)?.nome || '').localeCompare(persona(b.pid)?.nome || '') || a.nome.localeCompare(b.nome));
+  h += `<div class="sec">Da contare <small>${ord.length}</small></div><div class="stack" id="inv-list">` + ord.map(t => {
+    const p = persona(t.pid); const s = stima(t, now);
+    return `<div class="inv" data-tid="${t.id}"><div class="inv-top"><div><div class="nm">${esc(t.nome)} ${t.dosaggio ? `<span class="muted" style="font-weight:400;font-size:13px">${esc(t.dosaggio)}</span>` : ''}</div>
+      <div class="ds">${p ? esc(p.nome) + ' · ' : ''}stima ${fmtQ(s)} ${esc(unita(t, s))}${t.stato === 'sospesa' ? ' · sospesa' : ''}</div></div><span class="tag" data-diff>—</span></div>
+      <div class="inv-in"><input class="inp" inputmode="numeric" placeholder="0" data-c><span>× ${fmtN(t.unitaConf || 1)} +</span><input class="inp" inputmode="decimal" placeholder="0" data-s><span>=</span><div class="eq" data-tot>—</div></div>
+      <div class="inv-lb"><span>confezioni</span><span></span><span>sfuse</span><span></span><span>${esc(FORME[t.forma]?.p || 'unità')}</span></div></div>`;
+  }).join('') + `</div><button class="btn block" style="margin-top:14px" data-a="salvaInventario">${ic('check')} Salva inventario</button>`;
+
+  // storico
+  const sess = {};
+  for (const m of db.movimenti.filter(m => m.tipo === 'inventario')) (sess[m.sessione || m.data] ||= []).push(m);
+  const keys = Object.keys(sess).sort((a, b) => b - a).slice(0, 12);
+  if (keys.length) {
+    h += `<div class="sec">Inventari precedenti</div><div class="stack">` + keys.map(k => {
+      const l = sess[k]; const diff = l.filter(m => Math.abs(m.diff) >= .01).length;
+      return `<details class="inv-s"><summary><span>${fmtD(+k, true)} · ${l.length} ${l.length === 1 ? 'farmaco' : 'farmaci'}</span><span class="${diff ? 'neg' : 'pos'}" style="font-size:13px">${diff ? diff + ' differenze' : 'tutto torna'}</span></summary>` +
+        l.map(m => { const t = terapia(m.tid); if (!t) return ''; const p = persona(t.pid); return `<div class="ln"><span>${esc(t.nome)}${p ? ' · ' + esc(p.nome) : ''}</span><span class="${Math.abs(m.diff) < .01 ? '' : m.diff > 0 ? 'pos' : 'neg'}">${Math.abs(m.diff) < .01 ? '=' : (m.diff > 0 ? '+' : '') + fmtN(m.diff)}</span></div>`; }).join('') + `</details>`;
+    }).join('') + `</div>`;
+  }
+  return h;
+}
+function invRow(el) {
+  const t = terapia(el.dataset.tid); const c = num(el.querySelector('[data-c]').value); const s = num(el.querySelector('[data-s]').value);
+  const tot = el.querySelector('[data-tot]'); const dg = el.querySelector('[data-diff]');
+  if (c == null && s == null) { tot.textContent = '—'; dg.className = 'tag'; dg.textContent = '—'; return null; }
+  const q = (c || 0) * (t.unitaConf || 1) + (s || 0);
+  const d = q - Math.max(0, stima(t));
+  tot.textContent = fmtN(q);
+  const same = Math.abs(d) < .25;
+  dg.className = 'tag ' + (same ? 'green' : d > 0 ? 'blue' : 'red');
+  dg.textContent = same ? 'Torna' : (d > 0 ? '+' : '') + fmtN(Math.round(d * 4) / 4);
+  return q;
+}
+
+/* ---------- vista: Altro ---------- */
+function vAltro() {
+  const imp = db.impostazioni;
+  const notOk = imp.notifiche && 'Notification' in window && Notification.permission === 'granted';
+  let h = header('Altro', 'Impostazioni e backup');
+  h += `<div class="sec">Riordino</div><div class="rows">
+    <button class="set" data-a="setNum" data-id="sogliaDefault"><div class="si">${ic('clock','s')}</div><div class="bx"><b>Anticipo per la ricetta</b><small>Giorni di margine predefiniti per chiedere al medico e ritirare</small></div><span class="vl">${imp.sogliaDefault} gg</span></button>
+    <button class="set" data-a="setNum" data-id="giorniGiallo"><div class="si">${ic('alert','s')}</div><div class="bx"><b>Preavviso</b><small>Giorni prima della soglia in cui il farmaco diventa giallo</small></div><span class="vl">${imp.giorniGiallo} gg</span></button>
+    <button class="set" data-a="setNum" data-id="copertura"><div class="si">${ic('box','s')}</div><div class="bx"><b>Copertura richiesta</b><small>Giorni da coprire quando suggerisce quante confezioni chiedere</small></div><span class="vl">${imp.copertura} gg</span></button>
+    <button class="set" data-a="setNum" data-id="promemoriaInventario"><div class="si">${ic('count','s')}</div><div class="bx"><b>Promemoria inventario</b><small>Ogni quanti giorni ricordarti di contare le scorte</small></div><span class="vl">${imp.promemoriaInventario} gg</span></button>
+  </div>
+  <div class="sec">App</div><div class="rows">
+    <button class="set" data-a="notifiche"><div class="si">${ic('bell','s')}</div><div class="bx"><b>Avvisi scorte</b><small>Notifica quando un farmaco va riordinato e numero sull'icona</small></div><span class="sw ${notOk ? 'on' : ''}"></span></button>
+    <div class="set"><div class="si">${ic('moon','s')}</div><div class="bx"><b>Tema</b></div><div class="seg" style="--n:3;width:190px">${[['auto','Auto'],['chiaro','Chiaro'],['scuro','Scuro']].map(([k,l]) => `<button class="${imp.tema === k ? 'on' : ''}" data-a="tema" data-id="${k}">${l}</button>`).join('')}</div></div>
+  </div>
+  <div class="sec">Dati</div><div class="rows">
+    <button class="set" data-a="esporta"><div class="si">${ic('down','s')}</div><div class="bx"><b>Salva backup</b><small>${imp.ultimoBackup ? 'Ultimo: ' + fmtD(imp.ultimoBackup, true) : 'Mai fatto'} · file .json da conservare su Drive</small></div>${ic('right')}</button>
+    <button class="set" data-a="importa"><div class="si">${ic('up','s')}</div><div class="bx"><b>Ripristina backup</b><small>Sostituisce i dati di questo telefono</small></div>${ic('right')}</button>
+    <button class="set" data-a="reset"><div class="si" style="background:var(--red-soft);color:var(--red)">${ic('trash','s')}</div><div class="bx"><b style="color:var(--red)">Cancella tutti i dati</b><small>Persone, terapie e storico</small></div></button>
+  </div>
+  <input type="file" id="file-imp" accept="application/json,.json" hidden>
+  <p class="foot-note">Farmacia · v1.0<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
+  return h;
+}
+
+/* ---------- sheet ---------- */
+function apriSheet(title, body, foot, onMount, sub) {
+  $('#sh-t').textContent = title;
+  const sp = $('#sh-p'); sp.hidden = !sub; sp.textContent = sub || '';
+  $('#sh-b').innerHTML = body; $('#sh-f').innerHTML = foot;
+  $('#sh-b').scrollTop = 0;
+  $('#sheet').hidden = false;
+  if (!sheetOpen) { history.pushState({ s: 1 }, ''); sheetOpen = true; }
+  onMount && onMount();
+}
+function chiudiSheet(fromPop) {
+  if (!sheetOpen) return;
+  sheetOpen = false; sheetOk = null; $('#sheet').hidden = true; $('#sh-b').innerHTML = '';
+  if (!fromPop) { ignorePop++; history.back(); }
+}
+function conferma(titolo, testo, ok = 'Conferma', danger = false) {
+  return new Promise(res => {
+    sheetOk = () => { res(true); return true; };
+    apriSheet(titolo, `<p style="margin:4px 0 8px;font-size:15px;color:var(--muted);text-align:center">${testo}</p>`,
+      `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn ${danger ? 'danger' : ''}" data-a="ok">${ok}</button>`);
+    const prev = $('#sheet').querySelector('.sheet-bg');
+    prev.onclick = () => res(false);
+  });
+}
+const v = id => { const el = document.getElementById('f-' + id); return el ? el.value.trim() : ''; };
+function stepper(id, val, min = 0, step = 1) {
+  return `<div class="step"><button type="button" data-step="-${step}" data-for="f-${id}">−</button><input id="f-${id}" inputmode="decimal" value="${val}" data-min="${min}"><button type="button" data-step="${step}" data-for="f-${id}">+</button></div>`;
+}
+
+/* --- persona --- */
+function formPersona(p) {
+  const nuovo = !p;
+  p = p || { nome: '', relazione: '', medico: '', cf: '', note: '', colore: COLORI[db.persone.length % COLORI.length] };
+  let col = p.colore;
+  sheetOk = () => {
+    const nome = v('nome'); if (!nome) { toast('Inserisci il nome'); return false; }
+    const dati = { nome, relazione: v('rel'), medico: v('med'), cf: v('cf').toUpperCase(), note: v('note'), colore: col };
+    if (nuovo) { db.persone.push(Object.assign({ id: uid(), creato: Date.now() }, dati)); toast('Persona aggiunta'); }
+    else Object.assign(p, dati);
+    salva(); return true;
+  };
+  apriSheet(nuovo ? 'Nuova persona' : 'Modifica persona', `
+    <div class="f"><label>Nome</label><input id="f-nome" value="${esc(p.nome)}" placeholder="Es. Mamma, Giulia…" autocomplete="off"></div>
+    <div class="f"><label>Relazione (facoltativo)</label><input id="f-rel" value="${esc(p.relazione)}" placeholder="Es. madre, suocero"></div>
+    <div class="f"><label>Medico curante</label><input id="f-med" value="${esc(p.medico)}" placeholder="Es. Dott.ssa Bianchi" list="dl-med"><div class="hint">Proposto in automatico per le nuove terapie.</div></div>
+    <div class="f"><label>Codice fiscale (facoltativo)</label><input id="f-cf" value="${esc(p.cf || '')}" autocapitalize="characters" placeholder="Utile nella richiesta al medico"></div>
+    <div class="f"><label>Colore</label><div class="colors">${COLORI.map(c => `<button type="button" class="${c === col ? 'on' : ''}" style="--c:${c}" data-col="${c}"></button>`).join('')}</div></div>
+    <div class="f"><label>Note</label><textarea id="f-note" placeholder="Allergie, intolleranze, farmacia di fiducia…">${esc(p.note)}</textarea></div>
+    ${medDatalist()}
+    ${nuovo ? '' : `<button class="btn danger block" data-a="eliminaPersona" data-id="${p.id}">${ic('trash','s')} Elimina persona</button>`}`,
+    `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">${nuovo ? 'Aggiungi' : 'Salva'}</button>`,
+    () => {
+      $('#sh-b').querySelectorAll('[data-col]').forEach(b => b.onclick = () => { col = b.dataset.col; $('#sh-b').querySelectorAll('[data-col]').forEach(x => x.classList.toggle('on', x === b)); });
+      if (nuovo) setTimeout(() => $('#f-nome')?.focus(), 250);
+    });
+}
+function medDatalist() {
+  const s = new Set([...db.persone.map(p => p.medico), ...db.terapie.map(t => t.medico)].filter(Boolean));
+  return `<datalist id="dl-med">${[...s].map(m => `<option value="${esc(m)}">`).join('')}</datalist>`;
+}
+
+/* --- terapia --- */
+function firma(t) { return JSON.stringify([t.forma, t.dose, t.schema, t.inizio, t.fine]); }
+function formTerapia(t, pid) {
+  const nuovo = !t;
+  const p = persona(nuovo ? pid : t.pid);
+  const base = t || { nome: '', dosaggio: '', forma: 'compresse', dose: 1, schema: { tipo: 'giornaliero', volte: 1, ogniN: 2, giorni: [0, 1, 2, 3, 4, 5, 6], momenti: [], stimaSettimana: 2 }, unitaConf: '', inizio: isoData(), fine: '', medico: p?.medico || '', soglia: '', note: '', scortaMin: '' };
+  const sc = Object.assign({ tipo: 'giornaliero', volte: 1, ogniN: 2, giorni: [0,1,2,3,4,5,6], momenti: [], stimaSettimana: 2 }, JSON.parse(JSON.stringify(base.schema)));
+  const fOpts = Object.entries(FORME).map(([k, f]) => `<option value="${k}" ${k === base.forma ? 'selected' : ''}>${f.nome}</option>`).join('');
+  const body = `
+    <div class="f"><label>Farmaco</label><input id="f-nome" value="${esc(base.nome)}" placeholder="Es. Cardioaspirina" autocomplete="off"></div>
+    <div class="grid2"><div class="f"><label>Dosaggio</label><input id="f-dos" value="${esc(base.dosaggio)}" placeholder="Es. 100 mg"></div>
+    <div class="f"><label>Forma</label><select id="f-forma">${fOpts}</select></div></div>
+    <div class="f"><label>Frequenza</label><div class="seg" id="seg-tipo">${[['giornaliero','Ogni giorno'],['ogniN','Ogni N gg'],['settimanale','Alcuni giorni'],['bisogno','Al bisogno']].map(([k,l]) => `<button type="button" data-tipo="${k}" class="${sc.tipo === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+    <div id="box-fisso">
+      <div class="grid2">
+        <div class="f"><label>Quantità per volta (<span data-u>${esc((FORME[base.forma]||FORME.altro).p)}</span>)</label>${stepper('dose', fmtN(base.dose).replace('.', ''), 0, 0.25)}</div>
+        <div class="f"><label>Volte al giorno</label>${stepper('volte', sc.volte, 1, 1)}</div>
+      </div>
+      <div class="f" id="box-ogniN"><label>Ogni quanti giorni</label>${stepper('ogniN', sc.ogniN, 2, 1)}</div>
+      <div class="f" id="box-giorni"><label>Giorni della settimana</label><div class="toggles">${GIORNI.map((g, i) => `<button type="button" class="tg round ${sc.giorni.includes(i) ? 'on' : ''}" data-g="${i}">${g}</button>`).join('')}</div></div>
+      <div class="f"><label>Momenti (facoltativo, per lo storico)</label><div class="toggles">${MOMENTI.map(m => `<button type="button" class="tg ${sc.momenti.includes(m) ? 'on' : ''}" data-m="${m}">${m}</button>`).join('')}</div></div>
+    </div>
+    <div id="box-bisogno">
+      <div class="grid2">
+        <div class="f"><label>Consumo stimato a settimana</label>${stepper('stimaSett', fmtN(sc.stimaSettimana), 0, 1)}<div class="hint">Anche 0 se è raro.</div></div>
+        <div class="f"><label>Avvisami sotto</label><input id="f-smin" inputmode="decimal" value="${base.scortaMin ?? ''}" placeholder="es. 5"><div class="hint"><span data-u>${esc((FORME[base.forma]||FORME.altro).p)}</span> rimaste</div></div>
+      </div>
+    </div>
+    <div class="calc" id="calc-rate"></div>
+    <div class="grid2">
+      <div class="f"><label>Unità per confezione</label><input id="f-uconf" inputmode="decimal" value="${base.unitaConf ?? ''}" placeholder="Es. 30"></div>
+      ${nuovo ? `<div class="f"><label>Scorta in casa ora</label><input id="f-scorta" inputmode="decimal" placeholder="Totale ${esc((FORME[base.forma]||FORME.altro).p)}"><div class="hint" id="h-scorta"></div></div>` : `<div class="f"><label>Anticipo ricetta (gg)</label><input id="f-soglia" inputmode="numeric" value="${base.soglia ?? ''}" placeholder="${db.impostazioni.sogliaDefault}"></div>`}
+    </div>
+    <div class="grid2">
+      <div class="f"><label>Inizio terapia</label><input type="date" id="f-ini" value="${base.inizio || ''}"></div>
+      <div class="f"><label>Fine (se prevista)</label><input type="date" id="f-fin" value="${base.fine || ''}"></div>
+    </div>
+    <div class="f"><label>Medico prescrittore</label><input id="f-med" value="${esc(base.medico)}" list="dl-med" placeholder="Es. Dott. Rossi"></div>
+    ${nuovo ? `<div class="f"><label>Anticipo per la ricetta (giorni)</label><input id="f-soglia" inputmode="numeric" value="" placeholder="Predefinito: ${db.impostazioni.sogliaDefault}"><div class="hint">Quanti giorni prima dell'esaurimento ti serve per farti fare la ricetta e ritirare il farmaco.</div></div>` : ''}
+    <div class="f"><label>Note</label><textarea id="f-note" placeholder="Es. a stomaco pieno, piano terapeutico, specialista…">${esc(base.note)}</textarea></div>
+    ${medDatalist()}`;
+  const leggi = () => {
+    const s = { tipo: sc.tipo, volte: Math.max(1, Math.round(num(v('volte')) || 1)), ogniN: Math.max(2, Math.round(num(v('ogniN')) || 2)), giorni: sc.giorni.slice().sort(), momenti: MOMENTI.filter(m => sc.momenti.includes(m)), stimaSettimana: num(v('stimaSett')) || 0 };
+    return { forma: v('forma'), dose: num(v('dose')) || 0, schema: s };
+  };
+  const aggiorna = () => {
+    const tipo = sc.tipo;
+    $('#box-fisso').hidden = tipo === 'bisogno'; $('#box-bisogno').hidden = tipo !== 'bisogno';
+    $('#box-ogniN').hidden = tipo !== 'ogniN'; $('#box-giorni').hidden = tipo !== 'settimanale';
+    const f = FORME[v('forma')] || FORME.altro;
+    $('#sh-b').querySelectorAll('[data-u]').forEach(e => e.textContent = f.p);
+    const tmp = leggi(); const r = rateGiornaliero(tmp);
+    const uc = num(v('uconf'));
+    let txt = r ? `Consumo: ${fmtN(r)} ${r <= 1 ? f.s : f.p} al giorno` : 'Consumo non fisso';
+    if (r && uc) txt += ` · 1 confezione dura ~${Math.floor(uc / r)} gg`;
+    $('#calc-rate').innerHTML = `<span>${txt}</span>`;
+    const hs = $('#h-scorta');
+    if (hs) { const q = num(v('scorta')); hs.textContent = q != null && uc ? `≈ ${fmtN(Math.round(q / uc * 10) / 10)} confezioni${r ? ' · ' + Math.floor(q / r) + ' giorni' : ''}` : 'Conta tutte le unità, anche quelle delle scatole aperte.'; }
+  };
+  sheetOk = () => {
+    const nome = v('nome'); if (!nome) { toast('Inserisci il nome del farmaco'); return false; }
+    const pos = leggi();
+    if (pos.schema.tipo !== 'bisogno' && !(pos.dose > 0)) { toast('Indica la quantità per volta'); return false; }
+    if (pos.schema.tipo === 'settimanale' && !pos.schema.giorni.length) { toast('Scegli almeno un giorno'); return false; }
+    const uc = num(v('uconf'));
+    if (!(uc > 0)) { toast('Indica quante unità ha una confezione'); return false; }
+    const ini = v('ini') || null, fin = v('fin') || null;
+    if (ini && fin && fin < ini) { toast('La fine è prima dell\'inizio'); return false; }
+    const sg = num(v('soglia'));
+    const dati = Object.assign(pos, { nome, dosaggio: v('dos'), unitaConf: uc, inizio: ini, fine: fin, medico: v('med'), soglia: sg != null ? Math.round(sg) : null, note: v('note'), scortaMin: pos.schema.tipo === 'bisogno' ? num(v('smin')) : null });
+    const now = Date.now();
+    if (nuovo) {
+      const q = num(v('scorta'));
+      if (q == null) { toast('Indica la scorta che avete in casa (anche 0)'); return false; }
+      const nt = Object.assign({ id: uid(), pid, stato: 'attiva', scortaBase: q, dataBase: now, riordino: null, creato: now }, dati);
+      db.terapie.push(nt); mov(nt.id, 'iniziale', { q });
+      toast('Terapia aggiunta');
+    } else {
+      const prima = firma(t), primaTxt = posologia(t);
+      if (t.stato === 'attiva') fissa(t, now);
+      Object.assign(t, dati);
+      if (firma(t) !== prima) mov(t.id, 'variazione', { da: primaTxt, a: posologia(t) });
+      toast('Modifiche salvate');
+    }
+    salva(); return true;
+  };
+  apriSheet(nuovo ? 'Nuova terapia' : 'Modifica terapia', body,
+    `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">${nuovo ? 'Aggiungi' : 'Salva'}</button>`,
+    () => {
+      const B = $('#sh-b');
+      B.querySelectorAll('[data-tipo]').forEach(b => b.onclick = () => { sc.tipo = b.dataset.tipo; B.querySelectorAll('[data-tipo]').forEach(x => x.classList.toggle('on', x === b)); aggiorna(); });
+      B.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const g = +b.dataset.g; const i = sc.giorni.indexOf(g); i >= 0 ? sc.giorni.splice(i, 1) : sc.giorni.push(g); b.classList.toggle('on'); aggiorna(); });
+      B.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { const m = b.dataset.m; const i = sc.momenti.indexOf(m); i >= 0 ? sc.momenti.splice(i, 1) : sc.momenti.push(m); b.classList.toggle('on'); });
+      B.addEventListener('input', aggiorna); B.addEventListener('change', aggiorna);
+      aggiorna();
+      if (nuovo) setTimeout(() => $('#f-nome')?.focus(), 250);
+    }, p ? 'per ' + p.nome : '');
+}
+
+/* --- movimenti --- */
+function formCarico(t, confPre) {
+  const f = FORME[t.forma] || FORME.altro;
+  sheetOk = () => {
+    const c = Math.max(0, Math.round(num(v('conf')) || 0)); const s = num(v('sfuse')) || 0;
+    const q = c * (t.unitaConf || 1) + s; if (!(q > 0)) { toast('Indica cosa hai caricato'); return false; }
+    const sc = v('scad'); const now = Date.now();
+    if (t.stato === 'attiva') fissa(t, now); else t.scortaBase = Math.max(0, t.scortaBase);
+    t.scortaBase += q;
+    mov(t.id, 'carico', { q, conf: c || null, scadenza: sc ? parseData(sc) : null, note: v('note') || null });
+    t.riordino = null; delete selR[t.id];
+    salva(); toast(`+${fmtN(q)} ${q <= 1 ? f.s : f.p}`); return true;
+  };
+  apriSheet('Carica confezioni', `
+    <div class="grid2"><div class="f"><label>Confezioni</label>${stepper('conf', confPre || 1, 0, 1)}</div>
+    <div class="f"><label>Unità sfuse in più</label>${stepper('sfuse', 0, 0, 1)}</div></div>
+    <div class="calc" id="calc-c"></div>
+    <div class="f"><label>Scadenza (facoltativo)</label><input type="date" id="f-scad"><div class="hint">Ti avviso quando la confezione si avvicina alla scadenza.</div></div>
+    <div class="f"><label>Nota</label><input id="f-note" placeholder="Es. farmacia comunale"></div>`,
+    `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">Carica</button>`,
+    () => {
+      const up = () => { const q = (Math.round(num(v('conf')) || 0)) * (t.unitaConf || 1) + (num(v('sfuse')) || 0); $('#calc-c').innerHTML = `<span>Totale caricato</span><span>+${fmtN(q)} ${q <= 1 ? f.s : f.p}</span>`; };
+      $('#sh-b').addEventListener('input', up); up();
+    }, `${t.nome} · confezione da ${fmtN(t.unitaConf)} ${f.p}`);
+}
+function formConta(t) {
+  const f = FORME[t.forma] || FORME.altro; const st = Math.max(0, stima(t));
+  sheetOk = () => {
+    const c = num(v('conf')), s = num(v('sfuse'));
+    if (c == null && s == null) { toast('Inserisci il conteggio'); return false; }
+    const q = (c || 0) * (t.unitaConf || 1) + (s || 0);
+    registraConta(t, q, Date.now()); salva();
+    toast('Scorta aggiornata'); return true;
+  };
+  apriSheet('Conta la scorta', `
+    <div class="grid2"><div class="f"><label>Confezioni intere</label><input id="f-conf" class="inp" inputmode="numeric" placeholder="0"></div>
+    <div class="f"><label>${esc(f.p.charAt(0).toUpperCase() + f.p.slice(1))} sfuse</label><input id="f-sfuse" class="inp" inputmode="decimal" placeholder="0"></div></div>
+    <div class="calc" id="calc-c"></div>`,
+    `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">Salva</button>`,
+    () => {
+      const up = () => {
+        const c = num(v('conf')), s = num(v('sfuse'));
+        if (c == null && s == null) { $('#calc-c').innerHTML = `<span>Stima attuale</span><span>${fmtQ(st)} ${esc(unita(t, st))}</span>`; return; }
+        const q = (c || 0) * (t.unitaConf || 1) + (s || 0); const d = q - st;
+        $('#calc-c').innerHTML = `<span>Contate ${fmtN(q)} · stima ${fmtQ(st)}</span><span class="${Math.abs(d) < .25 ? '' : d > 0 ? 'pos' : 'neg'}">${Math.abs(d) < .25 ? 'Torna' : (d > 0 ? '+' : '') + fmtN(Math.round(d * 4) / 4)}</span>`;
+      };
+      $('#sh-b').addEventListener('input', up); up();
+    }, `${t.nome} · confezione da ${fmtN(t.unitaConf)} ${f.p}`);
+}
+function registraConta(t, q, now, sessione) {
+  const st = stima(t, now);
+  mov(t.id, 'inventario', { q, stimaPrima: st, diff: q - Math.max(0, st), sessione: sessione || now });
+  t.scortaBase = q; t.dataBase = now;
+  db.impostazioni.ultimoInventario = sessione ? now : db.impostazioni.ultimoInventario;
+}
+function formCorreggi(t) {
+  const f = FORME[t.forma] || FORME.altro; let segno = -1;
+  sheetOk = () => {
+    const q = num(v('q')); if (!(q > 0)) { toast('Indica la quantità'); return false; }
+    if (t.stato === 'attiva') fissa(t);
+    t.scortaBase = Math.max(0, t.scortaBase + segno * q);
+    mov(t.id, 'correzione', { q: segno * q, note: v('note') || null }); salva(); toast('Scorta corretta'); return true;
+  };
+  apriSheet('Correggi la scorta', `
+    <div class="f"><div class="seg" style="--n:2"><button type="button" class="on" data-sg="-1">Togli</button><button type="button" data-sg="1">Aggiungi</button></div></div>
+    <div class="f"><label>Quantità (${esc(f.p)})</label>${stepper('q', 1, 0, 1)}</div>
+    <div class="f"><label>Motivo</label><input id="f-note" placeholder="Es. dose in più, compressa persa, campione del medico" list="dl-mot"><datalist id="dl-mot"><option value="Dose extra"><option value="Dose saltata"><option value="Compressa persa o rotta"><option value="Campione del medico"><option value="Prestito"></datalist></div>`,
+    `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">Salva</button>`,
+    () => { $('#sh-b').querySelectorAll('[data-sg]').forEach(b => b.onclick = () => { segno = +b.dataset.sg; $('#sh-b').querySelectorAll('[data-sg]').forEach(x => x.classList.toggle('on', x === b)); }); },
+    `${t.nome} · stima attuale ${fmtQ(stima(t))} ${unita(t, stima(t))}`);
+}
+function formNumero(key) {
+  const lab = { sogliaDefault: 'Anticipo per la ricetta', giorniGiallo: 'Preavviso', copertura: 'Copertura richiesta', promemoriaInventario: 'Promemoria inventario' }[key];
+  sheetOk = () => { const n = Math.round(num(v('n'))); if (!(n >= 0)) { toast('Valore non valido'); return false; } db.impostazioni[key] = n; salva(); return true; };
+  apriSheet(lab, `<div class="f"><label>Giorni</label>${stepper('n', db.impostazioni[key], 0, 1)}</div>`,
+    `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">Salva</button>`);
+}
+
+/* ---------- azioni ---------- */
+const A = {
+  tab: id => tab(id),
+  back: () => history.back(),
+  chiudi: () => chiudiSheet(),
+  ok: () => { if (sheetOk && sheetOk() !== false) { chiudiSheet(); render(); } },
+  filtro: id => { filtro = id; render(); },
+  invFiltro: id => { invFiltro = id; render(); },
+  apriPersona: id => push({ name: 'persona', id }),
+  apriTerapia: id => push({ name: 'terapia', id }),
+  nuovaPersona: () => formPersona(),
+  modificaPersona: id => formPersona(persona(id)),
+  eliminaPersona: async id => {
+    const p = persona(id); const n = db.terapie.filter(t => t.pid === id).length;
+    chiudiSheet();
+    await new Promise(r => setTimeout(r, 60));
+    if (!await conferma('Eliminare ' + p.nome + '?', `Verranno cancellate anche ${n} terapie e tutto il loro storico. Non si può annullare.`, 'Elimina', true)) return;
+    const tids = new Set(db.terapie.filter(t => t.pid === id).map(t => t.id));
+    db.terapie = db.terapie.filter(t => t.pid !== id); db.movimenti = db.movimenti.filter(m => !tids.has(m.tid));
+    db.persone = db.persone.filter(x => x.id !== id); if (filtro === id) filtro = 'tutti';
+    salva(); tab('persone'); toast('Persona eliminata');
+  },
+  nuovaTerapia: id => formTerapia(null, id),
+  modificaTerapia: id => formTerapia(terapia(id)),
+  carico: id => formCarico(terapia(id)),
+  conta: id => formConta(terapia(id)),
+  correggi: id => formCorreggi(terapia(id)),
+  richiedi: id => { const t = terapia(id); const a = analisi(t, db.impostazioni); const c = suggerisciConf(t, a); t.riordino = { data: Date.now(), conf: c }; mov(id, 'richiesta', { conf: c }); salva(); render(); toast('Segnata come richiesta'); },
+  annullaRichiesta: id => { terapia(id).riordino = null; salva(); render(); },
+  sospendi: async id => { const t = terapia(id); if (!await conferma('Sospendere la terapia?', 'La scorta smette di calare finché non la riprendi.', 'Sospendi')) return; fissa(t); t.stato = 'sospesa'; mov(id, 'sospesa'); salva(); render(); },
+  riprendi: id => { const t = terapia(id); t.dataBase = Date.now(); t.stato = 'attiva'; mov(id, 'ripresa'); salva(); render(); },
+  concludi: async id => {
+    const t = terapia(id); if (!await conferma('Concludere la terapia?', 'Resterà nello storico della persona con le date di inizio e fine.', 'Concludi')) return;
+    if (t.stato === 'attiva') fissa(t); t.stato = 'conclusa'; t.riordino = null;
+    const oggi = isoData(); if (!t.fine || t.fine > oggi) t.fine = oggi;
+    mov(id, 'conclusa'); salva(); render();
+  },
+  riattiva: id => { const t = terapia(id); t.stato = 'attiva'; t.fine = null; t.dataBase = Date.now(); mov(id, 'riattivata'); salva(); render(); toast('Terapia riattivata'); },
+  eliminaTerapia: async id => {
+    const t = terapia(id); if (!await conferma(`Eliminare ${t.nome}?`, 'La terapia e il suo storico verranno cancellati. Se è solo finita, usa “Concludi” per tenerla nello storico.', 'Elimina', true)) return;
+    db.terapie = db.terapie.filter(x => x.id !== id); db.movimenti = db.movimenti.filter(m => m.tid !== id);
+    salva(); history.back(); toast('Terapia eliminata');
+  },
+  selR: id => { selR[id].sel = !selR[id].sel; render(); },
+  confR: (id, el) => { selR[id].conf = Math.max(1, selR[id].conf + (+el.dataset.d)); render(); },
+  condividi: async med => {
+    const { s, items } = testoRichiesta(med); if (!items.length) return;
+    try { if (navigator.share) { await navigator.share({ text: s }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(s); toast('Testo copiato: incollalo nel messaggio al medico'); } catch { toast('Impossibile copiare'); }
+  },
+  segnaRichieste: med => {
+    const { items } = testoRichiesta(med); const now = Date.now();
+    for (const x of items) { const c = selR[x.t.id].conf; x.t.riordino = { data: now, conf: c }; mov(x.t.id, 'richiesta', { conf: c }); delete selR[x.t.id]; }
+    salva(); render(); toast(items.length === 1 ? '1 ricetta in attesa' : `${items.length} ricette in attesa`);
+  },
+  ritirato: id => { const t = terapia(id); formCarico(t, t.riordino?.conf || 1); },
+  lottoOk: id => { const m = db.movimenti.find(m => m.id === id); if (m) m.scadOk = true; salva(); render(); },
+  salvaInventario: async () => {
+    const rows = [...document.querySelectorAll('#inv-list .inv')].map(el => ({ el, q: invRow(el) })).filter(r => r.q != null);
+    if (!rows.length) { toast('Non hai inserito nessun conteggio'); return; }
+    const diff = rows.filter(r => Math.abs(r.q - Math.max(0, stima(terapia(r.el.dataset.tid)))) >= .25).length;
+    if (!await conferma('Salvare l\'inventario?', `${rows.length} ${rows.length === 1 ? 'farmaco contato' : 'farmaci contati'}${diff ? `, ${diff} con differenze rispetto alla stima` : ', tutto torna'}. Le scorte ripartiranno dai valori contati.`, 'Salva')) return;
+    const now = Date.now();
+    for (const r of rows) registraConta(terapia(r.el.dataset.tid), r.q, now, now);
+    db.impostazioni.ultimoInventario = now;
+    salva(); render(); scrollTo(0, 0); toast('Inventario salvato');
+  },
+  setNum: id => formNumero(id),
+  tema: id => { db.impostazioni.tema = id; applicaTema(); salva(); render(); },
+  notifiche: async () => {
+    const imp = db.impostazioni;
+    if (imp.notifiche && 'Notification' in window && Notification.permission === 'granted') { imp.notifiche = false; salva(); render(); return; }
+    if (!('Notification' in window)) { toast('Notifiche non supportate su questo browser'); return; }
+    const p = await Notification.requestPermission();
+    if (p !== 'granted') { toast('Permesso negato: abilitalo dalle impostazioni del telefono'); return; }
+    imp.notifiche = true; salva(); render();
+    await registraControllo();
+    const reg = await navigator.serviceWorker?.ready;
+    reg?.showNotification('Farmacia', { body: 'Avvisi attivi: ti segnalo i farmaci da riordinare.', icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', tag: 'test' });
+  },
+  esporta: async () => {
+    const nome = `farmacia-backup-${isoData()}.json`;
+    const blob = new Blob([JSON.stringify(db, null, 1)], { type: 'application/json' });
+    const file = new File([blob], nome, { type: 'application/json' });
+    let fatto = false;
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Backup Farmacia' }); fatto = true; } } catch (e) { if (e.name === 'AbortError') return; }
+    if (!fatto) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+    db.impostazioni.ultimoBackup = Date.now(); salva(); render(); toast('Backup creato');
+  },
+  importa: () => { const i = $('#file-imp'); i.value = ''; i.onchange = importaFile; i.click(); },
+  reset: async () => {
+    if (!await conferma('Cancellare tutto?', 'Persone, terapie e storico di questo telefono verranno eliminati. Fai prima un backup se ti serve.', 'Cancella tutto', true)) return;
+    db = nuovoDb(); salva(); applicaTema(); tab('home'); toast('Dati cancellati');
+  }
+};
+async function importaFile(e) {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!Array.isArray(d.persone) || !Array.isArray(d.terapie)) throw new Error('formato');
+    if (!await conferma('Ripristinare il backup?', `${d.persone.length} persone e ${d.terapie.length} terapie sostituiranno i dati attuali di questo telefono.`, 'Ripristina', true)) return;
+    db = migra(d); salva(); applicaTema(); tab('home'); toast('Backup ripristinato');
+  } catch { toast('File non valido'); }
+}
+
+document.addEventListener('click', e => {
+  const st = e.target.closest('[data-step]');
+  if (st) {
+    const inp = document.getElementById(st.dataset.for); const step = +st.dataset.step; const min = +inp.dataset.min || 0;
+    let val = (num(inp.value) || 0) + step; val = Math.max(min, Math.round(val * 100) / 100);
+    inp.value = fmtN(val); inp.dispatchEvent(new Event('input', { bubbles: true })); return;
+  }
+  const el = e.target.closest('[data-a]'); if (!el) return;
+  const fn = A[el.dataset.a]; if (fn) { e.preventDefault(); fn(el.dataset.id, el, e); }
+});
+document.addEventListener('input', e => { const r = e.target.closest('.inv'); if (r) invRow(r); });
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(msg, btn, cb) {
+  document.querySelector('.toast')?.remove(); clearTimeout(toastT);
+  const d = document.createElement('div'); d.className = 'toast'; d.innerHTML = `<span>${esc(msg)}</span>${btn ? `<button>${esc(btn)}</button>` : ''}`;
+  if (btn) d.querySelector('button').onclick = () => { d.remove(); cb(); };
+  document.body.appendChild(d); toastT = setTimeout(() => d.remove(), btn ? 15000 : 2800);
+}
+
+/* ---------- badge, SW, controllo in background ---------- */
+function aggiornaBadge() {
+  const n = daGestire(db).length;
+  try { if (n && navigator.setAppBadge) navigator.setAppBadge(n); else navigator.clearAppBadge?.(); } catch {}
+}
+async function registraControllo() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    if (!('periodicSync' in reg)) return;
+    const st = await navigator.permissions.query({ name: 'periodic-background-sync' });
+    if (st.state === 'granted') await reg.periodicSync.register('controllo-scorte', { minInterval: 12 * 3600 * 1000 });
+  } catch {}
+}
+function registraSW() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const w = reg.installing;
+      w?.addEventListener('statechange', () => {
+        if (w.state === 'installed' && navigator.serviceWorker.controller) toast('Nuova versione disponibile', 'Aggiorna', () => w.postMessage('skipWaiting'));
+      });
+    });
+    if (db.impostazioni.notifiche) registraControllo();
+  }).catch(() => {});
+  let ricaricato = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!ricaricato) { ricaricato = true; location.reload(); } });
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && db) { render(); aggiornaBadge(); } });
+
+(async function init() {
+  try { db = await IDB.get('stato'); } catch {}
+  db = migra(db || nuovoDb());
+  applicaTema(); render(); aggiornaBadge(); registraSW();
+  try { navigator.storage?.persist?.(); } catch {}
+})();
+</script>
+</body>
+</html>
