@@ -197,6 +197,8 @@ button.row{width:100%}
 .inv-in{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:center;margin-top:10px;font-size:12.5px;color:var(--muted)}
 .inv-in .inp{padding:9px 10px;text-align:center;font-weight:650}
 .inv-in .eq{text-align:center;font-weight:700;color:var(--text);font-size:15px}
+.inv-in2{display:grid;grid-template-columns:1fr 1.5fr;gap:8px;margin-top:10px}.inv-in2 .inp{padding:9px 10px;text-align:center;font-weight:650}
+.inv-lb2{display:grid;grid-template-columns:1fr 1.5fr;gap:8px;font-size:11px;color:var(--muted);text-align:center;margin-top:4px}
 .inv-lb{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;font-size:11px;color:var(--muted);text-align:center;margin-top:4px}
 .ri{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
 .ri:last-child{border-bottom:0}
@@ -265,6 +267,17 @@ const MOMENTI = ['Mattina','Pranzo','Pomeriggio','Sera','Notte'];
 function fmtN(n) { if (n == null || !isFinite(n)) return '–'; return (Math.round(n * 100) / 100).toLocaleString('it-IT', { maximumFractionDigits: 2 }); }
 function fmtQ(n) { if (n == null || n <= 0) return '0'; return fmtN(n >= 20 ? Math.floor(n) : Math.floor(n * 4 + 1e-6) / 4); }
 function unita(t, n) { const f = FORME[t.forma] || FORME.altro; return (n != null && n > 0 && n <= 1) ? f.s : f.p; }
+function flacone(t) { return ['gocce','collirio','sciroppo','spray','inalatore'].includes(t.forma); }
+function contenitore(t, n) { return flacone(t) ? (n === 1 ? 'flacone' : 'flaconi') : (n === 1 ? 'confezione' : 'confezioni'); }
+function chiusoTxt(t, n) { const m = flacone(t); return `${n} ${contenitore(t, n)} ${m ? (n === 1 ? 'chiuso' : 'chiusi') : (n === 1 ? 'chiusa' : 'chiuse')}`; }
+function unitaS(t, n) { return modoApertura(t) ? (n > 0 && n <= 1 ? 'giorno' : 'giorni') : unita(t, n); }
+function scortaTxt(t, s) {
+  if (!modoApertura(t)) return `${fmtQ(s)} ${esc(unita(t, s))}`;
+  if (!(s > 0.001)) return `0 ${contenitore(t, 0)}`;
+  const f = flaconiInfo(t, s);
+  return `${f.chiusi ? chiusoTxt(t, f.chiusi) + ' + ' : ''}1 ${flacone(t) ? 'aperto' : 'aperta'} (${Math.ceil(f.rem - 1e-6)} gg)`;
+}
+function giorniDa(iso) { return iso ? Math.max(0, (oggi0() - parseData(iso)) / DAY) : 0; }
 function fmtD(ts, anno) { if (ts == null) return '–'; const d = new Date(ts); const o = { day: 'numeric', month: 'short' }; if (anno || d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric'; return d.toLocaleDateString('it-IT', o).replace('.', ''); }
 function fmtDT(ts) { const d = new Date(ts); return fmtD(ts) + ' · ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); }
 function rel(ts) { const g = Math.round((oggi0(new Date(ts)) - oggi0()) / DAY); if (g === 0) return 'oggi'; if (g === 1) return 'domani'; if (g === -1) return 'ieri'; return g > 0 ? `tra ${g} giorni` : `${-g} giorni fa`; }
@@ -272,6 +285,7 @@ function ggTxt(g) { if (!isFinite(g)) return '—'; return String(Math.max(0, Ma
 function persona(id) { return db.persone.find(p => p.id === id); }
 function terapia(id) { return db.terapie.find(t => t.id === id); }
 function colore(p) { return p ? p.colore : '#999'; }
+function cap(x) { return x ? x.charAt(0).toUpperCase() + x.slice(1) : ''; }
 function iniziali(n) { return (n || '?').trim().charAt(0).toUpperCase(); }
 
 const IC = {
@@ -391,7 +405,7 @@ function medCard(t, a, showPers = true) {
   const sub = t.stato === 'attiva' && a.rate > 0 && !a.copreFine && a.esaurimento
     ? `finisce ${fmtD(a.esaurimento)}`
     : t.stato === 'conclusa' ? `${fmtD(parseData(t.inizio))} → ${t.fine ? fmtD(parseData(t.fine)) : '–'}`
-    : `${fmtQ(a.stima)} ${esc(unita(t, a.stima))}`;
+    : scortaTxt(t, a.stima);
   return `<button class="med lv-${a.livello}" data-a="apriTerapia" data-id="${t.id}">
     <div class="med-ico">${ic('pill')}</div>
     <div class="med-body">
@@ -436,6 +450,13 @@ function vHome() {
   const giorniInv = imp.ultimoInventario ? (now - imp.ultimoInventario) / DAY : Infinity;
   if (db.terapie.some(t => t.stato === 'attiva') && giorniInv > imp.promemoriaInventario) {
     banners.push(`<button class="banner" data-a="tab" data-id="inventario"><div class="bi">${ic('count')}</div><div class="bx"><b>È ora di un inventario</b><span class="muted">${imp.ultimoInventario ? 'Ultimo ' + rel(imp.ultimoInventario) : 'Non ne hai ancora fatto uno'} · conta le confezioni in casa</span></div>${ic('right')}</button>`);
+  }
+  for (const t of db.terapie.filter(t => t.stato === 'attiva' && modoApertura(t) && (filtro === 'tutti' || t.pid === filtro))) {
+    const s = stima(t, now); if (!(s > 0.001)) continue;
+    const fi = flaconiInfo(t, s);
+    if (fi.rem > 1 || fi.L < 2) continue;
+    const p = persona(t.pid);
+    banners.push(`<button class="banner blue" data-a="apriTerapia" data-id="${t.id}"><div class="bi">${ic('refresh')}</div><div class="bx"><b>${esc(t.nome)}${p ? ' · ' + esc(p.nome) : ''}</b><span class="muted">Il ${contenitore(t, 1)} ${flacone(t) ? 'aperto' : 'aperta'} va sostituito ${rel(now + fi.rem * DAY)}${fi.chiusi ? '' : ' · non ne hai altri'}</span></div>${ic('right')}</button>`);
   }
   for (const m of lottiInScadenza(now)) {
     const t = terapia(m.tid); const p = persona(t.pid);
@@ -517,19 +538,21 @@ function posologia(t) {
   else if (s.tipo === 'settimanale') fr = `${v > 1 ? v + ' volte, ' : ''}${(s.giorni || []).length === 7 ? 'tutti i giorni' : (s.giorni || []).map(g => GIORNI_L[g]).join(', ')}`;
   return `${d} · ${fr}${s.momenti && s.momenti.length ? ` (${s.momenti.join(', ').toLowerCase()})` : ''}`;
 }
-const MOV_IC = { iniziale: 'box', carico: 'down', inventario: 'count', correzione: 'pm', variazione: 'edit', sospesa: 'pause', ripresa: 'play', conclusa: 'flag', riattivata: 'refresh', richiesta: 'steth' };
+const MOV_IC = { iniziale: 'box', carico: 'down', inventario: 'count', correzione: 'pm', variazione: 'edit', sospesa: 'pause', ripresa: 'play', conclusa: 'flag', riattivata: 'refresh', richiesta: 'steth', apertura: 'refresh' };
 function movTesto(m, t) {
-  const u = n => esc(unita(t, Math.abs(n)));
+  const u = n => esc(unitaS(t, Math.abs(n)));
   switch (m.tipo) {
-    case 'iniziale': return `Scorta iniziale: ${fmtN(m.q)} ${u(m.q)}`;
+    case 'iniziale': return m.chiusi != null ? `Scorta iniziale: ${chiusoTxt(t, m.chiusi)}${m.apertoIl ? ` + 1 aperto il ${fmtD(parseData(m.apertoIl))}` : ''}` : `Scorta iniziale: ${fmtN(m.q)} ${u(m.q)}`;
     case 'carico': return `Caricate ${m.conf ? m.conf + (m.conf === 1 ? ' confezione' : ' confezioni') + ' · ' : ''}<span class="pos">+${fmtN(m.q)}</span> ${u(m.q)}${m.scadenza ? `<small>Scadenza ${fmtD(m.scadenza, true)}</small>` : ''}`;
-    case 'inventario': return `Inventario: contate ${fmtN(m.q)} ${u(m.q)} <small>Stima ${fmtN(Math.max(0, m.stimaPrima))} · differenza <span class="${Math.abs(m.diff) < .01 ? '' : m.diff > 0 ? 'pos' : 'neg'}">${m.diff > 0 ? '+' : ''}${fmtN(m.diff)}</span></small>`;
+    case 'inventario': if (m.chiusi != null) return `Inventario: ${chiusoTxt(t, m.chiusi)}${m.apertoIl ? ` + 1 aperto il ${fmtD(parseData(m.apertoIl))}` : ''}<small>Differenza rispetto alla stima <span class="${Math.abs(m.diff) < .5 ? '' : m.diff > 0 ? 'pos' : 'neg'}">${Math.abs(m.diff) < .5 ? 'nessuna' : (m.diff > 0 ? '+' : '') + Math.round(m.diff) + ' gg'}</span></small>`;
+      return `Inventario: contate ${fmtN(m.q)} ${u(m.q)} <small>Stima ${fmtN(Math.max(0, m.stimaPrima))} · differenza <span class="${Math.abs(m.diff) < .01 ? '' : m.diff > 0 ? 'pos' : 'neg'}">${m.diff > 0 ? '+' : ''}${fmtN(m.diff)}</span></small>`;
     case 'correzione': return `Correzione <span class="${m.q > 0 ? 'pos' : 'neg'}">${m.q > 0 ? '+' : ''}${fmtN(m.q)}</span> ${u(m.q)}`;
     case 'variazione': return `Terapia modificata<small>${esc(m.da)} → ${esc(m.a)}</small>`;
     case 'sospesa': return 'Terapia sospesa';
     case 'ripresa': return 'Terapia ripresa';
     case 'conclusa': return 'Terapia conclusa';
     case 'riattivata': return 'Terapia riattivata';
+    case 'apertura': return `Aperto un nuovo ${contenitore(t, 1)}${m.scartati ? ` <small>Il precedente aveva ancora ${Math.round(m.scartati)} gg</small>` : ''}`;
     case 'richiesta': return `Ricetta chiesta al medico${m.conf ? ` (${m.conf} conf.)` : ''}`;
     default: return m.tipo;
   }
@@ -548,8 +571,11 @@ function vTerapia() {
   h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"><span class="tag ${st[0]}">${st[1]}</span>${a.richiesta ? `<span class="tag blue">${ic('clock','s')} Ricetta richiesta ${rel(t.riordino.data)}</span>` : ''}</div>`;
   const conf = t.unitaConf ? a.stima / t.unitaConf : null;
   h += `<div class="stats">
+    ${modoApertura(t) ? (() => { const fi = flaconiInfo(t, a.stima); const ru = rateUnita(t); return `
+    <div class="stat"><span>${flacone(t) ? 'Flaconi' : 'Confezioni'} in casa</span><b>${a.stima > 0.001 ? fi.chiusi + 1 : 0}</b><small>${a.stima > 0.001 ? `${fi.chiusi} ${flacone(t) ? (fi.chiusi === 1 ? 'chiuso' : 'chiusi') : (fi.chiusi === 1 ? 'chiusa' : 'chiuse')} + 1 in uso (${Math.ceil(fi.rem - 1e-6)} gg)` : 'nessuno'}</small></div>
+    <div class="stat"><span>Giorni di copertura</span><b>${t.stato !== 'attiva' ? '—' : ggTxt(a.giorni)}</b><small>1 ${contenitore(t, 1)} = ${Math.floor(fi.L)} gg${ru > 0 && t.unitaConf / ru < t.apertura ? ' (finisce prima della validità)' : ''}</small></div>`; })() : `
     <div class="stat"><span>Scorta stimata</span><b>${fmtQ(a.stima)} <small>${esc(unita(t, a.stima))}</small></b>${conf != null ? `<small>≈ ${fmtN(Math.max(0, Math.floor(conf * 10) / 10))} confezioni</small>` : ''}</div>
-    <div class="stat"><span>Giorni di copertura</span><b>${t.stato !== 'attiva' ? '—' : a.rate ? ggTxt(a.giorni) : '—'}</b><small>${a.rate ? fmtN(a.rate) + ' ' + esc(unita(t, a.rate)) + ' al giorno' : 'consumo non fisso'}</small></div>
+    <div class="stat"><span>Giorni di copertura</span><b>${t.stato !== 'attiva' ? '—' : a.rate ? ggTxt(a.giorni) : '—'}</b><small>${a.rate ? fmtN(a.rate) + ' ' + esc(unita(t, a.rate)) + ' al giorno' : 'consumo non fisso'}</small></div>`}
     <div class="stat"><span>Finisce il</span><b>${t.stato === 'attiva' && a.esaurimento && !a.copreFine ? fmtD(a.esaurimento) : '—'}</b><small>${t.stato === 'attiva' && a.esaurimento && !a.copreFine ? rel(a.esaurimento) : a.copreFine ? 'copre la terapia' : ''}</small></div>
     <div class="stat"><span>Chiedi la ricetta entro</span><b style="${a.entro && a.entro < Date.now() ? 'color:var(--red)' : ''}">${t.stato === 'attiva' && a.entro && !a.copreFine ? (a.entro < Date.now() ? 'Subito' : fmtD(a.entro)) : '—'}</b><small>${a.soglia} giorni di anticipo</small></div></div>`;
 
@@ -557,7 +583,8 @@ function vTerapia() {
   const acts = [];
   acts.push(`<button class="act" data-a="carico" data-id="${t.id}"><span class="ai">${ic('down')}</span>Carica confezioni</button>`);
   acts.push(`<button class="act" data-a="conta" data-id="${t.id}"><span class="ai">${ic('count')}</span>Conta scorta</button>`);
-  acts.push(`<button class="act" data-a="correggi" data-id="${t.id}"><span class="ai">${ic('pm')}</span>Correggi</button>`);
+  acts.push(modoApertura(t) ? `<button class="act" data-a="nuovoFlacone" data-id="${t.id}"><span class="ai">${ic('refresh')}</span>Aperto ${flacone(t) ? 'nuovo flacone' : 'nuova conf.'}</button>`
+    : `<button class="act" data-a="correggi" data-id="${t.id}"><span class="ai">${ic('pm')}</span>Correggi</button>`);
   if (t.stato === 'attiva') {
     acts.push(a.richiesta ? `<button class="act blue" data-a="annullaRichiesta" data-id="${t.id}"><span class="ai">${ic('cross')}</span>Annulla richiesta</button>`
       : `<button class="act blue" data-a="richiedi" data-id="${t.id}"><span class="ai">${ic('steth')}</span>Ricetta richiesta</button>`);
@@ -577,6 +604,7 @@ function vTerapia() {
     <div class="row"><span>Posologia</span><span>${esc(posologia(t))}</span></div>
     <div class="row"><span>Periodo</span><span>${t.inizio ? 'dal ' + fmtD(parseData(t.inizio), true) : ''}${t.fine ? ' al ' + fmtD(parseData(t.fine), true) : t.inizio ? ', continuativa' : 'continuativa'}</span></div>
     <div class="row"><span>Confezione</span><span>${t.unitaConf ? fmtN(t.unitaConf) + ' ' + esc(unita(t, t.unitaConf)) : '–'}</span></div>
+    ${modoApertura(t) ? `<div class="row"><span>Validità dopo l'apertura</span><span>${t.apertura} giorni</span></div>${t.stato === 'attiva' && a.stima > 0.001 ? `<div class="row"><span>Cambio ${contenitore(t, 1)}</span><span>${fmtD(Date.now() + flaconiInfo(t, a.stima).rem * DAY)}</span></div>` : ''}` : ''}
     <div class="row"><span>Medico</span><span>${esc(t.medico || '–')}</span></div>
     ${t.schema.tipo === 'bisogno' ? `<div class="row"><span>Avvisa sotto</span><span>${t.scortaMin != null ? fmtN(t.scortaMin) + ' ' + esc(unita(t, t.scortaMin)) : '–'}</span></div>` : ''}
     ${t.note ? `<div class="row"><span>Note</span><span style="font-weight:400">${esc(t.note)}</span></div>` : ''}
@@ -594,7 +622,7 @@ function suggerisciConf(t, a) {
   if (!a.rate) return 1;
   let gg = db.impostazioni.copertura;
   if (t.fine) gg = Math.min(gg, Math.max(1, (parseData(t.fine) + DAY - Date.now()) / DAY));
-  return Math.max(1, Math.ceil((a.rate * gg - Math.max(0, a.stima)) / t.unitaConf));
+  return Math.max(1, Math.ceil((a.rate * gg - Math.max(0, a.stima)) / (modoApertura(t) ? vitaConf(t) : t.unitaConf)));
 }
 function vRiordino() {
   const now = Date.now();
@@ -660,15 +688,17 @@ function vInventario() {
   let h = header('Inventario', imp.ultimoInventario ? `Ultimo: ${fmtD(imp.ultimoInventario, true)} (${rel(imp.ultimoInventario)})` : 'Mai fatto');
   const ts = db.terapie.filter(t => t.stato !== 'conclusa' && (invFiltro === 'tutti' || t.pid === invFiltro));
   if (!db.terapie.some(t => t.stato !== 'conclusa')) return h + `<div class="empty"><div class="ei">${ic('box')}</div><h3>Niente da contare</h3><p>Quando avrai inserito delle terapie potrai verificare qui le scorte reali.</p></div>`;
-  h += `<div class="card" style="font-size:13.5px;display:flex;gap:12px"><div class="bi" style="width:36px;height:36px;border-radius:11px;background:var(--pri-soft);color:var(--pri);display:grid;place-items:center;flex:none">${ic('info','s')}</div><div>Conta le confezioni intere e le unità sfuse di ogni farmaco. L'app confronta il conteggio con la stima, segna la differenza e riparte dal dato reale. Lascia vuoto quello che non conti.</div></div>`;
+  h += `<div class="card" style="font-size:13.5px;display:flex;gap:12px"><div class="bi" style="width:36px;height:36px;border-radius:11px;background:var(--pri-soft);color:var(--pri);display:grid;place-items:center;flex:none">${ic('info','s')}</div><div>Conta le confezioni intere e le unità sfuse di ogni farmaco (per i flaconi con validità: quelli chiusi e la data di apertura di quello in uso). L'app confronta il conteggio con la stima, segna la differenza e riparte dal dato reale. Lascia vuoto quello che non conti.</div></div>`;
   if (db.persone.length > 1) h += `<div class="chips"><button class="chip ${invFiltro === 'tutti' ? 'on' : ''}" data-a="invFiltro" data-id="tutti">Tutti</button>` + db.persone.map(p => `<button class="chip ${invFiltro === p.id ? 'on' : ''}" data-a="invFiltro" data-id="${p.id}"><span class="dot" style="--c:${p.colore}"></span>${esc(p.nome)}</button>`).join('') + `</div>`;
   const ord = ts.slice().sort((a, b) => (persona(a.pid)?.nome || '').localeCompare(persona(b.pid)?.nome || '') || a.nome.localeCompare(b.nome));
   h += `<div class="sec">Da contare <small>${ord.length}</small></div><div class="stack" id="inv-list">` + ord.map(t => {
     const p = persona(t.pid); const s = stima(t, now);
     return `<div class="inv" data-tid="${t.id}"><div class="inv-top"><div><div class="nm">${esc(t.nome)} ${t.dosaggio ? `<span class="muted" style="font-weight:400;font-size:13px">${esc(t.dosaggio)}</span>` : ''}</div>
-      <div class="ds">${p ? esc(p.nome) + ' · ' : ''}stima ${fmtQ(s)} ${esc(unita(t, s))}${t.stato === 'sospesa' ? ' · sospesa' : ''}</div></div><span class="tag" data-diff>—</span></div>
-      <div class="inv-in"><input class="inp" inputmode="numeric" placeholder="0" data-c><span>× ${fmtN(t.unitaConf || 1)} +</span><input class="inp" inputmode="decimal" placeholder="0" data-s><span>=</span><div class="eq" data-tot>—</div></div>
-      <div class="inv-lb"><span>confezioni</span><span></span><span>sfuse</span><span></span><span>${esc(FORME[t.forma]?.p || 'unità')}</span></div></div>`;
+      <div class="ds">${p ? esc(p.nome) + ' · ' : ''}stima ${scortaTxt(t, s)}${t.stato === 'sospesa' ? ' · sospesa' : ''}</div></div><span class="tag" data-diff>—</span></div>
+      ${modoApertura(t) ? `<div class="inv-in2"><input class="inp" inputmode="numeric" placeholder="0" data-c><input class="inp" type="date" data-o></div>
+      <div class="inv-lb2"><span>${flacone(t) ? 'flaconi chiusi' : 'confezioni chiuse'}</span><span>${flacone(t) ? 'aperto' : 'aperta'} il (vuoto se nessuno)</span></div><div data-tot hidden></div></div>`
+      : `<div class="inv-in"><input class="inp" inputmode="numeric" placeholder="0" data-c><span>× ${fmtN(t.unitaConf || 1)} +</span><input class="inp" inputmode="decimal" placeholder="0" data-s><span>=</span><div class="eq" data-tot>—</div></div>
+      <div class="inv-lb"><span>confezioni</span><span></span><span>sfuse</span><span></span><span>${esc(FORME[t.forma]?.p || 'unità')}</span></div></div>`}`;
   }).join('') + `</div><button class="btn block" style="margin-top:14px" data-a="salvaInventario">${ic('check')} Salva inventario</button>`;
 
   // storico
@@ -678,15 +708,29 @@ function vInventario() {
   if (keys.length) {
     h += `<div class="sec">Inventari precedenti</div><div class="stack">` + keys.map(k => {
       const l = sess[k]; const diff = l.filter(m => Math.abs(m.diff) >= .01).length;
-      return `<details class="inv-s"><summary><span>${fmtD(+k, true)} · ${l.length} ${l.length === 1 ? 'farmaco' : 'farmaci'}</span><span class="${diff ? 'neg' : 'pos'}" style="font-size:13px">${diff ? diff + ' differenze' : 'tutto torna'}</span></summary>` +
+      return `<details class="inv-s"><summary><span>${fmtD(+k, true)} · ${l.length} ${l.length === 1 ? 'farmaco' : 'farmaci'}</span><span class="${diff ? 'neg' : 'pos'}" style="font-size:13px">${diff ? diff + (diff === 1 ? ' differenza' : ' differenze') : 'tutto torna'}</span></summary>` +
         l.map(m => { const t = terapia(m.tid); if (!t) return ''; const p = persona(t.pid); return `<div class="ln"><span>${esc(t.nome)}${p ? ' · ' + esc(p.nome) : ''}</span><span class="${Math.abs(m.diff) < .01 ? '' : m.diff > 0 ? 'pos' : 'neg'}">${Math.abs(m.diff) < .01 ? '=' : (m.diff > 0 ? '+' : '') + fmtN(m.diff)}</span></div>`; }).join('') + `</details>`;
     }).join('') + `</div>`;
   }
   return h;
 }
+function contaApertura(t, c, o) {
+  const L = vitaConf(t);
+  return (c || 0) * L + (o ? Math.max(0, L - giorniDa(o)) : 0);
+}
 function invRow(el) {
-  const t = terapia(el.dataset.tid); const c = num(el.querySelector('[data-c]').value); const s = num(el.querySelector('[data-s]').value);
-  const tot = el.querySelector('[data-tot]'); const dg = el.querySelector('[data-diff]');
+  const t = terapia(el.dataset.tid); const dg = el.querySelector('[data-diff]'); const tot = el.querySelector('[data-tot]');
+  const c = num(el.querySelector('[data-c]').value);
+  if (modoApertura(t)) {
+    const o = el.querySelector('[data-o]').value || null;
+    if (c == null && !o) { dg.className = 'tag'; dg.textContent = '—'; return null; }
+    const q = contaApertura(t, c, o); const d = q - Math.max(0, stima(t)); const same = Math.abs(d) < 1;
+    dg.className = 'tag ' + (same ? 'green' : d > 0 ? 'blue' : 'red');
+    dg.textContent = same ? 'Torna' : (d > 0 ? '+' : '') + Math.round(d) + ' gg';
+    el._extra = { chiusi: c || 0, apertoIl: o };
+    return q;
+  }
+  const s = num(el.querySelector('[data-s]').value);
   if (c == null && s == null) { tot.textContent = '—'; dg.className = 'tag'; dg.textContent = '—'; return null; }
   const q = (c || 0) * (t.unitaConf || 1) + (s || 0);
   const d = q - Math.max(0, stima(t));
@@ -718,7 +762,7 @@ function vAltro() {
     <button class="set" data-a="reset"><div class="si" style="background:var(--red-soft);color:var(--red)">${ic('trash','s')}</div><div class="bx"><b style="color:var(--red)">Cancella tutti i dati</b><small>Persone, terapie e storico</small></div></button>
   </div>
   <input type="file" id="file-imp" accept="application/json,.json" hidden>
-  <p class="foot-note">Farmacia · v1.0<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
+  <p class="foot-note">Farmacia · v1.1<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
   return h;
 }
 
@@ -726,7 +770,8 @@ function vAltro() {
 function apriSheet(title, body, foot, onMount, sub) {
   $('#sh-t').textContent = title;
   const sp = $('#sh-p'); sp.hidden = !sub; sp.textContent = sub || '';
-  $('#sh-b').innerHTML = body; $('#sh-f').innerHTML = foot;
+  const ob = $('#sh-b'), nb = ob.cloneNode(false); ob.replaceWith(nb);
+  nb.innerHTML = body; $('#sh-f').innerHTML = foot;
   $('#sh-b').scrollTop = 0;
   $('#sheet').hidden = false;
   if (!sheetOpen) { history.pushState({ s: 1 }, ''); sheetOpen = true; }
@@ -784,7 +829,7 @@ function medDatalist() {
 }
 
 /* --- terapia --- */
-function firma(t) { return JSON.stringify([t.forma, t.dose, t.schema, t.inizio, t.fine]); }
+function firma(t) { return JSON.stringify([t.forma, t.dose, t.schema, t.inizio, t.fine, t.apertura || null]); }
 function formTerapia(t, pid) {
   const nuovo = !t;
   const p = persona(nuovo ? pid : t.pid);
@@ -813,9 +858,11 @@ function formTerapia(t, pid) {
     </div>
     <div class="calc" id="calc-rate"></div>
     <div class="grid2">
-      <div class="f"><label>Unità per confezione</label><input id="f-uconf" inputmode="decimal" value="${base.unitaConf ?? ''}" placeholder="Es. 30"></div>
+      <div class="f"><label><span data-ucap>${esc(cap((FORME[base.forma]||FORME.altro).p))}</span> per confezione</label><input id="f-uconf" inputmode="decimal" value="${base.unitaConf ?? ''}" placeholder="Es. 30"><div class="hint" id="h-uconf"></div></div>
       ${nuovo ? `<div class="f"><label>Scorta in casa ora</label><input id="f-scorta" inputmode="decimal" placeholder="Totale ${esc((FORME[base.forma]||FORME.altro).p)}"><div class="hint" id="h-scorta"></div></div>` : `<div class="f"><label>Anticipo ricetta (gg)</label><input id="f-soglia" inputmode="numeric" value="${base.soglia ?? ''}" placeholder="${db.impostazioni.sogliaDefault}"></div>`}
     </div>
+    <div class="f"><label>Da usare entro (giorni dall'apertura)</label><input id="f-apert" inputmode="numeric" value="${base.apertura ?? ''}" placeholder="Facoltativo, es. 28"><div class="hint">Per colliri, gocce, sciroppi: dopo questo periodo il flacone aperto va buttato anche se non è finito.</div></div>
+    ${nuovo ? `<div class="grid2" id="box-sc-a" hidden><div class="f"><label id="lb-chiusi">Flaconi chiusi</label><input id="f-chiusi" inputmode="numeric" placeholder="0"></div><div class="f"><label id="lb-aperto">Aperto il</label><input type="date" id="f-aperto"><div class="hint">Vuoto se nessuno è aperto</div></div></div>` : ''}
     <div class="grid2">
       <div class="f"><label>Inizio terapia</label><input type="date" id="f-ini" value="${base.inizio || ''}"></div>
       <div class="f"><label>Fine (se prevista)</label><input type="date" id="f-fin" value="${base.fine || ''}"></div>
@@ -834,10 +881,21 @@ function formTerapia(t, pid) {
     $('#box-ogniN').hidden = tipo !== 'ogniN'; $('#box-giorni').hidden = tipo !== 'settimanale';
     const f = FORME[v('forma')] || FORME.altro;
     $('#sh-b').querySelectorAll('[data-u]').forEach(e => e.textContent = f.p);
-    const tmp = leggi(); const r = rateGiornaliero(tmp);
+    const tmp = leggi(); const r = rateUnita(tmp);
     const uc = num(v('uconf'));
     let txt = r ? `Consumo: ${fmtN(r)} ${r <= 1 ? f.s : f.p} al giorno` : 'Consumo non fisso';
-    if (r && uc) txt += ` · 1 confezione dura ~${Math.floor(uc / r)} gg`;
+    const ap = num(v('apert'));
+    const tA = Object.assign({}, tmp, { unitaConf: uc, apertura: ap });
+    if (modoApertura(tA)) { const L = vitaConf(tA); txt += ` · 1 ${contenitore(tA, 1)} dura ${Math.floor(L)} gg${r && uc / r < ap ? '' : ' (limite: validità)'}`; }
+    else if (r && uc) txt += ` · 1 confezione dura ~${Math.floor(uc / r)} gg`;
+    $('#sh-b').querySelectorAll('[data-ucap]').forEach(e => e.textContent = cap(f.p));
+    const hu = $('#h-uconf'); if (hu) hu.textContent = ['gocce', 'collirio'].includes(v('forma')) ? 'Indicativamente 1 ml ≈ 20 gocce (3 ml ≈ 60)' : v('forma') === 'sciroppo' ? 'ml contenuti nel flacone' : '';
+    const ba = $('#box-sc-a');
+    if (ba) {
+      ba.hidden = !modoApertura(tA); $('#f-scorta').closest('.f').hidden = modoApertura(tA);
+      $('#lb-chiusi').textContent = cap(contenitore(tA, 2)) + (flacone(tA) ? ' chiusi' : ' chiuse');
+      $('#lb-aperto').textContent = flacone(tA) ? 'Aperto il' : 'Aperta il';
+    }
     $('#calc-rate').innerHTML = `<span>${txt}</span>`;
     const hs = $('#h-scorta');
     if (hs) { const q = num(v('scorta')); hs.textContent = q != null && uc ? `≈ ${fmtN(Math.round(q / uc * 10) / 10)} confezioni${r ? ' · ' + Math.floor(q / r) + ' giorni' : ''}` : 'Conta tutte le unità, anche quelle delle scatole aperte.'; }
@@ -852,18 +910,29 @@ function formTerapia(t, pid) {
     const ini = v('ini') || null, fin = v('fin') || null;
     if (ini && fin && fin < ini) { toast('La fine è prima dell\'inizio'); return false; }
     const sg = num(v('soglia'));
-    const dati = Object.assign(pos, { nome, dosaggio: v('dos'), unitaConf: uc, inizio: ini, fine: fin, medico: v('med'), soglia: sg != null ? Math.round(sg) : null, note: v('note'), scortaMin: pos.schema.tipo === 'bisogno' ? num(v('smin')) : null });
+    const dati = Object.assign(pos, { nome, dosaggio: v('dos'), unitaConf: uc, inizio: ini, fine: fin, medico: v('med'), soglia: sg != null ? Math.round(sg) : null, apertura: num(v('apert')) > 0 ? Math.round(num(v('apert'))) : null, note: v('note'), scortaMin: pos.schema.tipo === 'bisogno' ? num(v('smin')) : null });
     const now = Date.now();
     if (nuovo) {
-      const q = num(v('scorta'));
-      if (q == null) { toast('Indica la scorta che avete in casa (anche 0)'); return false; }
+      let q, extra = {};
+      if (modoApertura(dati)) {
+        const c = num(v('chiusi')), o = v('aperto') || null;
+        if (c == null && !o) { toast('Indica i flaconi che avete in casa (anche 0)'); return false; }
+        q = contaApertura(dati, c, o); extra = { chiusi: c || 0, apertoIl: o };
+      } else {
+        q = num(v('scorta'));
+        if (q == null) { toast('Indica la scorta che avete in casa (anche 0)'); return false; }
+      }
       const nt = Object.assign({ id: uid(), pid, stato: 'attiva', scortaBase: q, dataBase: now, riordino: null, creato: now }, dati);
-      db.terapie.push(nt); mov(nt.id, 'iniziale', { q });
+      db.terapie.push(nt); mov(nt.id, 'iniziale', Object.assign({ q }, extra));
       toast('Terapia aggiunta');
     } else {
       const prima = firma(t), primaTxt = posologia(t);
       if (t.stato === 'attiva') fissa(t, now);
+      const wasA = modoApertura(t), Lold = wasA ? vitaConf(t) : null;
+      const eqConf = wasA ? t.scortaBase / Lold : t.scortaBase / (t.unitaConf || 1);
       Object.assign(t, dati);
+      const isA = modoApertura(t);
+      if (wasA !== isA || (isA && Math.abs(vitaConf(t) - Lold) > 1e-6)) t.scortaBase = isA ? eqConf * vitaConf(t) : eqConf * t.unitaConf;
       if (firma(t) !== prima) mov(t.id, 'variazione', { da: primaTxt, a: posologia(t) });
       toast('Modifiche salvate');
     }
@@ -884,56 +953,65 @@ function formTerapia(t, pid) {
 
 /* --- movimenti --- */
 function formCarico(t, confPre) {
-  const f = FORME[t.forma] || FORME.altro;
+  const f = FORME[t.forma] || FORME.altro; const A = modoApertura(t);
+  const qty = () => (Math.max(0, Math.round(num(v('conf')) || 0))) * (A ? vitaConf(t) : (t.unitaConf || 1)) + (A ? 0 : (num(v('sfuse')) || 0));
   sheetOk = () => {
-    const c = Math.max(0, Math.round(num(v('conf')) || 0)); const s = num(v('sfuse')) || 0;
-    const q = c * (t.unitaConf || 1) + s; if (!(q > 0)) { toast('Indica cosa hai caricato'); return false; }
+    const c = Math.max(0, Math.round(num(v('conf')) || 0));
+    const q = qty(); if (!(q > 0)) { toast('Indica cosa hai caricato'); return false; }
     const sc = v('scad'); const now = Date.now();
     if (t.stato === 'attiva') fissa(t, now); else t.scortaBase = Math.max(0, t.scortaBase);
     t.scortaBase += q;
     mov(t.id, 'carico', { q, conf: c || null, scadenza: sc ? parseData(sc) : null, note: v('note') || null });
     t.riordino = null; delete selR[t.id];
-    salva(); toast(`+${fmtN(q)} ${q <= 1 ? f.s : f.p}`); return true;
+    salva(); toast(A ? `+${c} ${contenitore(t, c)}` : `+${fmtN(q)} ${q <= 1 ? f.s : f.p}`); return true;
   };
   apriSheet('Carica confezioni', `
-    <div class="grid2"><div class="f"><label>Confezioni</label>${stepper('conf', confPre || 1, 0, 1)}</div>
-    <div class="f"><label>Unità sfuse in più</label>${stepper('sfuse', 0, 0, 1)}</div></div>
+    <div class="grid2"><div class="f"><label>${cap(contenitore(t, 2))}</label>${stepper('conf', confPre || 1, 0, 1)}</div>
+    ${A ? '' : `<div class="f"><label>Unità sfuse in più</label>${stepper('sfuse', 0, 0, 1)}</div>`}</div>
     <div class="calc" id="calc-c"></div>
-    <div class="f"><label>Scadenza (facoltativo)</label><input type="date" id="f-scad"><div class="hint">Ti avviso quando la confezione si avvicina alla scadenza.</div></div>
+    <div class="f"><label>Scadenza (facoltativo)</label><input type="date" id="f-scad"><div class="hint">Quella stampata sulla confezione: ti avviso quando si avvicina.</div></div>
     <div class="f"><label>Nota</label><input id="f-note" placeholder="Es. farmacia comunale"></div>`,
     `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">Carica</button>`,
     () => {
-      const up = () => { const q = (Math.round(num(v('conf')) || 0)) * (t.unitaConf || 1) + (num(v('sfuse')) || 0); $('#calc-c').innerHTML = `<span>Totale caricato</span><span>+${fmtN(q)} ${q <= 1 ? f.s : f.p}</span>`; };
+      const up = () => { const q = qty(); $('#calc-c').innerHTML = A ? `<span>Copertura aggiunta</span><span>+${Math.floor(q)} giorni</span>` : `<span>Totale caricato</span><span>+${fmtN(q)} ${q <= 1 ? f.s : f.p}</span>`; };
       $('#sh-b').addEventListener('input', up); up();
-    }, `${t.nome} · confezione da ${fmtN(t.unitaConf)} ${f.p}`);
+    }, `${t.nome} · ${contenitore(t, 1)} da ${fmtN(t.unitaConf)} ${f.p}${A ? `, ${Math.floor(vitaConf(t))} gg una volta ${flacone(t) ? 'aperto' : 'aperta'}` : ''}`);
 }
 function formConta(t) {
-  const f = FORME[t.forma] || FORME.altro; const st = Math.max(0, stima(t));
+  const f = FORME[t.forma] || FORME.altro; const st = Math.max(0, stima(t)); const A = modoApertura(t);
+  const leggiC = () => {
+    const c = num(v('conf'));
+    if (A) { const o = v('aperto') || null; if (c == null && !o) return null; return { q: contaApertura(t, c, o), extra: { chiusi: c || 0, apertoIl: o } }; }
+    const s = num(v('sfuse')); if (c == null && s == null) return null;
+    return { q: (c || 0) * (t.unitaConf || 1) + (s || 0) };
+  };
   sheetOk = () => {
-    const c = num(v('conf')), s = num(v('sfuse'));
-    if (c == null && s == null) { toast('Inserisci il conteggio'); return false; }
-    const q = (c || 0) * (t.unitaConf || 1) + (s || 0);
-    registraConta(t, q, Date.now()); salva();
+    const r = leggiC(); if (!r) { toast('Inserisci il conteggio'); return false; }
+    registraConta(t, r.q, Date.now(), null, r.extra); salva();
     toast('Scorta aggiornata'); return true;
   };
-  apriSheet('Conta la scorta', `
+  apriSheet('Conta la scorta', A ? `
+    <div class="grid2"><div class="f"><label>${cap(contenitore(t, 2))} ${flacone(t) ? 'chiusi' : 'chiuse'}</label><input id="f-conf" class="inp" inputmode="numeric" placeholder="0"></div>
+    <div class="f"><label>${flacone(t) ? 'Aperto' : 'Aperta'} il</label><input id="f-aperto" class="inp" type="date"><div class="hint">Vuoto se nessuno è aperto</div></div></div>
+    <div class="calc" id="calc-c"></div>` : `
     <div class="grid2"><div class="f"><label>Confezioni intere</label><input id="f-conf" class="inp" inputmode="numeric" placeholder="0"></div>
-    <div class="f"><label>${esc(f.p.charAt(0).toUpperCase() + f.p.slice(1))} sfuse</label><input id="f-sfuse" class="inp" inputmode="decimal" placeholder="0"></div></div>
+    <div class="f"><label>${esc(cap(f.p))} sfuse</label><input id="f-sfuse" class="inp" inputmode="decimal" placeholder="0"></div></div>
     <div class="calc" id="calc-c"></div>`,
     `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">Salva</button>`,
     () => {
       const up = () => {
-        const c = num(v('conf')), s = num(v('sfuse'));
-        if (c == null && s == null) { $('#calc-c').innerHTML = `<span>Stima attuale</span><span>${fmtQ(st)} ${esc(unita(t, st))}</span>`; return; }
-        const q = (c || 0) * (t.unitaConf || 1) + (s || 0); const d = q - st;
-        $('#calc-c').innerHTML = `<span>Contate ${fmtN(q)} · stima ${fmtQ(st)}</span><span class="${Math.abs(d) < .25 ? '' : d > 0 ? 'pos' : 'neg'}">${Math.abs(d) < .25 ? 'Torna' : (d > 0 ? '+' : '') + fmtN(Math.round(d * 4) / 4)}</span>`;
+        const r = leggiC();
+        if (!r) { $('#calc-c').innerHTML = `<span>Stima attuale</span><span>${scortaTxt(t, st)}</span>`; return; }
+        const d = r.q - st; const tol = A ? 1 : .25;
+        const dt = A ? Math.round(d) + ' gg' : fmtN(Math.round(d * 4) / 4);
+        $('#calc-c').innerHTML = `<span>${A ? `Copertura ${Math.floor(r.q)} gg · stima ${Math.floor(st)}` : `Contate ${fmtN(r.q)} · stima ${fmtQ(st)}`}</span><span class="${Math.abs(d) < tol ? '' : d > 0 ? 'pos' : 'neg'}">${Math.abs(d) < tol ? 'Torna' : (d > 0 ? '+' : '') + dt}</span>`;
       };
-      $('#sh-b').addEventListener('input', up); up();
-    }, `${t.nome} · confezione da ${fmtN(t.unitaConf)} ${f.p}`);
+      $('#sh-b').addEventListener('input', up); $('#sh-b').addEventListener('change', up); up();
+    }, `${t.nome} · ${contenitore(t, 1)} da ${fmtN(t.unitaConf)} ${f.p}`);
 }
-function registraConta(t, q, now, sessione) {
+function registraConta(t, q, now, sessione, extra) {
   const st = stima(t, now);
-  mov(t.id, 'inventario', { q, stimaPrima: st, diff: q - Math.max(0, st), sessione: sessione || now });
+  mov(t.id, 'inventario', Object.assign({ q, stimaPrima: st, diff: q - Math.max(0, st), sessione: sessione || now }, extra || {}));
   t.scortaBase = q; t.dataBase = now;
   db.impostazioni.ultimoInventario = sessione ? now : db.impostazioni.ultimoInventario;
 }
@@ -947,11 +1025,11 @@ function formCorreggi(t) {
   };
   apriSheet('Correggi la scorta', `
     <div class="f"><div class="seg" style="--n:2"><button type="button" class="on" data-sg="-1">Togli</button><button type="button" data-sg="1">Aggiungi</button></div></div>
-    <div class="f"><label>Quantità (${esc(f.p)})</label>${stepper('q', 1, 0, 1)}</div>
+    <div class="f"><label>Quantità (${esc(unitaS(t, 2))})</label>${stepper('q', 1, 0, 1)}</div>
     <div class="f"><label>Motivo</label><input id="f-note" placeholder="Es. dose in più, compressa persa, campione del medico" list="dl-mot"><datalist id="dl-mot"><option value="Dose extra"><option value="Dose saltata"><option value="Compressa persa o rotta"><option value="Campione del medico"><option value="Prestito"></datalist></div>`,
     `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">Salva</button>`,
     () => { $('#sh-b').querySelectorAll('[data-sg]').forEach(b => b.onclick = () => { segno = +b.dataset.sg; $('#sh-b').querySelectorAll('[data-sg]').forEach(x => x.classList.toggle('on', x === b)); }); },
-    `${t.nome} · stima attuale ${fmtQ(stima(t))} ${unita(t, stima(t))}`);
+    `${t.nome} · stima attuale ${scortaTxt(t, stima(t))}`);
 }
 function formNumero(key) {
   const lab = { sogliaDefault: 'Anticipo per la ricetta', giorniGiallo: 'Preavviso', copertura: 'Copertura richiesta', promemoriaInventario: 'Promemoria inventario' }[key];
@@ -988,6 +1066,13 @@ const A = {
   conta: id => formConta(terapia(id)),
   correggi: id => formCorreggi(terapia(id)),
   richiedi: id => { const t = terapia(id); const a = analisi(t, db.impostazioni); const c = suggerisciConf(t, a); t.riordino = { data: Date.now(), conf: c }; mov(id, 'richiesta', { conf: c }); salva(); render(); toast('Segnata come richiesta'); },
+  nuovoFlacone: async id => {
+    const t = terapia(id); const s = stima(t); const fi = flaconiInfo(t, s);
+    if (fi.chiusi < 1) { toast(`Non risultano ${contenitore(t, 2)} chiusi: caricane prima uno`); return; }
+    if (!await conferma(`Aperto un nuovo ${contenitore(t, 1)}?`, `Il ${contenitore(t, 1)} in uso (ancora ${Math.ceil(fi.rem)} gg di validità) viene considerato finito e la validità riparte da oggi.`, 'Conferma')) return;
+    fissa(t); const scart = fi.rem; t.scortaBase = fi.chiusi * fi.L;
+    mov(id, 'apertura', { scartati: scart }); salva(); render(); toast(`Nuovo ${contenitore(t, 1)} in uso`);
+  },
   annullaRichiesta: id => { terapia(id).riordino = null; salva(); render(); },
   sospendi: async id => { const t = terapia(id); if (!await conferma('Sospendere la terapia?', 'La scorta smette di calare finché non la riprendi.', 'Sospendi')) return; fissa(t); t.stato = 'sospesa'; mov(id, 'sospesa'); salva(); render(); },
   riprendi: id => { const t = terapia(id); t.dataBase = Date.now(); t.stato = 'attiva'; mov(id, 'ripresa'); salva(); render(); },
@@ -1020,10 +1105,10 @@ const A = {
   salvaInventario: async () => {
     const rows = [...document.querySelectorAll('#inv-list .inv')].map(el => ({ el, q: invRow(el) })).filter(r => r.q != null);
     if (!rows.length) { toast('Non hai inserito nessun conteggio'); return; }
-    const diff = rows.filter(r => Math.abs(r.q - Math.max(0, stima(terapia(r.el.dataset.tid)))) >= .25).length;
+    const diff = rows.filter(r => { const t = terapia(r.el.dataset.tid); return Math.abs(r.q - Math.max(0, stima(t))) >= (modoApertura(t) ? 1 : .25); }).length;
     if (!await conferma('Salvare l\'inventario?', `${rows.length} ${rows.length === 1 ? 'farmaco contato' : 'farmaci contati'}${diff ? `, ${diff} con differenze rispetto alla stima` : ', tutto torna'}. Le scorte ripartiranno dai valori contati.`, 'Salva')) return;
     const now = Date.now();
-    for (const r of rows) registraConta(terapia(r.el.dataset.tid), r.q, now, now);
+    for (const r of rows) registraConta(terapia(r.el.dataset.tid), r.q, now, now, r.el._extra);
     db.impostazioni.ultimoInventario = now;
     salva(); render(); scrollTo(0, 0); toast('Inventario salvato');
   },

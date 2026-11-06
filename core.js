@@ -27,8 +27,8 @@ function impostazioniDefault() {
   return { sogliaDefault: 10, giorniGiallo: 7, copertura: 60, promemoriaInventario: 30, tema: 'auto', notifiche: false, ultimoInventario: null, ultimoBackup: null };
 }
 
-/* Unità consumate in media al giorno */
-function rateGiornaliero(t) {
+/* Unità (gocce, compresse…) consumate in media al giorno */
+function rateUnita(t) {
   const s = t.schema || {}; const d = +t.dose || 0;
   switch (s.tipo) {
     case 'giornaliero': return d * (s.volte || 1);
@@ -38,6 +38,21 @@ function rateGiornaliero(t) {
     default: return 0;
   }
 }
+
+/* Flaconi con validità dopo l'apertura: la scorta si misura in giorni di flacone */
+function modoApertura(t) { return +t.apertura > 0 && +t.unitaConf > 0; }
+function vitaConf(t) {
+  const r = rateUnita(t);
+  return Math.min(+t.apertura, r > 0 ? t.unitaConf / r : Infinity);
+}
+function flaconiInfo(t, s) {
+  const L = vitaConf(t);
+  if (!(s > 0.001)) return { L, chiusi: 0, rem: 0 };
+  const n = Math.ceil(s / L - 1e-9);
+  return { L, chiusi: n - 1, rem: s - (n - 1) * L };
+}
+/* Velocità con cui cala la scorta memorizzata (unità o giorni di flacone) */
+function rateGiornaliero(t) { return modoApertura(t) ? 1 : rateUnita(t); }
 
 function consumo(t, da, a) {
   const r = rateGiornaliero(t); if (!r) return 0;
@@ -65,7 +80,7 @@ function analisi(t, imp, now = Date.now()) {
   const copreFine = !!(fin && esaur && esaur + DAY >= fin);
   let livello;
   if (t.stato !== 'attiva') livello = 'inattiva';
-  else if (t.schema && t.schema.tipo === 'bisogno' && t.scortaMin != null && s <= t.scortaMin) livello = s <= 0.001 ? 'esaurito' : 'rosso';
+  else if (!modoApertura(t) && t.schema && t.schema.tipo === 'bisogno' && t.scortaMin != null && s <= t.scortaMin) livello = s <= 0.001 ? 'esaurito' : 'rosso';
   else if (r === 0) livello = (t.scortaMin != null && s <= t.scortaMin) ? (s <= 0.001 ? 'esaurito' : 'rosso') : 'ok';
   else if (copreFine) livello = 'ok';
   else if (s <= 0.001) livello = 'esaurito';
