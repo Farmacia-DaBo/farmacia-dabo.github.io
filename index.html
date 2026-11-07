@@ -261,11 +261,13 @@ details.guida[open] summary>svg:last-child{transform:rotate(90deg)}
 .sch-it:last-of-type{border-bottom:0}
 .sch-n{font-size:15px}.sch-p{font-size:14px;margin-top:2px}.sch-m{font-size:12.5px;color:var(--muted);margin-top:2px}
 .sch-foot{font-size:11px;color:var(--muted);margin:16px 0 0;text-align:center}
+@page{size:A4 portrait;margin:14mm}
 @media print{
   :root,[data-theme=dark]{--bg:#fff;--surface:#fff;--surface2:#fff;--text:#000;--muted:#444;--line:#ccc;--amber-soft:#f4f4f4;--shadow:none}
   nav.tabs,header.top,.noprint,.toast,.fab{display:none!important}
   .app{padding:0;max-width:none}.scheda{box-shadow:none;padding:0}
   .sch-it{break-inside:avoid}
+  .sch-h .av{display:none}
   .print-only{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:10px}
 }
 .foot-note{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
@@ -815,7 +817,7 @@ function vAltro() {
     <button class="set" data-a="reset"><div class="si" style="background:var(--red-soft);color:var(--red)">${ic('trash','s')}</div><div class="bx"><b style="color:var(--red)">Cancella tutti i dati</b><small>Persone, terapie e storico</small></div></button>
   </div>
   <input type="file" id="file-imp" accept="application/json,.json" hidden>
-  <p class="foot-note">Farmacia · v1.6<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
+  <p class="foot-note">Farmacia · v1.6.1<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
   return h;
 }
 
@@ -847,7 +849,7 @@ function vScheda() {
     <div class="sch-h"><div class="av" style="--c:${p.colore}">${esc(iniziali(p.nome))}</div><div><h2>${esc(p.nome)}</h2><div class="muted" style="font-size:13px">${[p.relazione, p.cf ? 'CF ' + p.cf : ''].filter(Boolean).map(esc).join(' · ')}</div></div></div>
     <div class="sch-meta">${p.medico ? `<div><span>Medico curante</span><b>${esc(p.medico)}</b></div>` : ''}<div><span>Aggiornata al</span><b>${fmtD(Date.now(), true)}</b></div></div>
     ${p.note ? `<div class="sch-note"><span>Note</span>${esc(p.note).replace(/\n/g, '<br>')}</div>` : ''}
-    <h3>Terapie in corso <small>${att.length}</small></h3>${att.length ? att.map(it).join('') : '<p class="muted">Nessuna</p>'}
+    <h3>Terapie in corso</h3>${att.length ? att.map(it).join('') : '<p class="muted">Nessuna</p>'}
     ${sos.length ? `<h3>Sospese</h3>${sos.map(it).join('')}` : ''}
     ${con.length ? `<h3>Concluse negli ultimi 6 mesi</h3>${con.map(t => `<div class="sch-it"><div class="sch-n"><b>${esc(t.nome)}</b> ${esc(t.dosaggio || '')}</div><div class="sch-m">${esc(posologia(t))} · ${t.inizio ? fmtD(parseData(t.inizio), true) : '?'} → ${fmtD(parseData(t.fine), true)}</div></div>`).join('')}` : ''}
     <p class="sch-foot">Generata con Farmacia · verificare sempre con il medico</p>
@@ -900,7 +902,7 @@ const GUIDA = [
     <p>Per piccoli aggiustamenti (una dose in più, una compressa persa) usa <b>Correggi</b>.</p>`],
   ['clip', 'Scheda terapie', `
     <p>Dalla pagina di una persona tocca l'icona <b>scheda</b> in alto: trovi il riepilogo con le terapie in corso (dosaggio, momenti, medico, piano terapeutico), quelle sospese, le concluse negli ultimi 6 mesi e le note, per esempio le allergie.</p>
-    <p><b>Condividi</b> manda il testo su WhatsApp o per mail. <b>PDF / Stampa</b> apre la stampa del telefono, da cui puoi scegliere <i>Salva come PDF</i>. Utile per il pronto soccorso, gli specialisti e le visite.</p>`],
+    <p><b>Condividi</b> manda il testo su WhatsApp o per mail. <b>PDF / Stampa</b> apre la stampa del telefono, da cui puoi scegliere <i>Salva come PDF</i>: il foglio è sempre A4 verticale. Utile per il pronto soccorso, gli specialisti e le visite.</p>`],
   ['shield', 'Piani terapeutici', `
     <p>Per i farmaci che lo richiedono, nella terapia inserisci <b>Piano terapeutico: scade il</b> e, se vuoi, lo specialista o il centro che lo rilascia.</p>
     <p>${PIANO_PREAVVISO} giorni prima della scadenza compare l'avviso in <b>Oggi</b>. Diventa rosso negli ultimi 15 giorni e quando è scaduto, e viene segnalato anche in <b>Riordino</b>, perché senza piano valido il medico non può fare la ricetta.</p>
