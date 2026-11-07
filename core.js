@@ -24,7 +24,7 @@ function parseData(s) { if (!s) return null; const [y, m, d] = s.split('-').map(
 function isoData(ts = Date.now()) { const d = new Date(ts); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
 
 function impostazioniDefault() {
-  return { sogliaDefault: 10, giorniGiallo: 7, copertura: 60, promemoriaInventario: 30, tema: 'auto', notifiche: false, ultimoInventario: null, ultimoBackup: null };
+  return { orari: Object.assign({}, MOMENTI_DEF), sogliaDefault: 10, giorniGiallo: 7, copertura: 60, promemoriaInventario: 30, tema: 'auto', notifiche: false, ultimoInventario: null, ultimoBackup: null };
 }
 
 /* Unità (gocce, compresse…) consumate in media al giorno */
@@ -55,7 +55,11 @@ function flaconiInfo(t, s) {
 function rateGiornaliero(t) { return modoApertura(t) ? 1 : rateUnita(t); }
 
 /* Orari indicativi dei momenti: la dose viene scalata a quell'ora */
-const ORE_MOMENTI = { Mattina: 8, Pranzo: 13, Pomeriggio: 17, Sera: 20, Notte: 22 };
+const MOMENTI_DEF = { Colazione: '08:00', Pranzo: '13:00', Pomeriggio: '17:00', Cena: '20:00', Notte: '22:00' };
+const MOMENTI_VECCHI = { Mattina: 'Colazione', Sera: 'Cena' };
+let ORARI = Object.assign({}, MOMENTI_DEF);
+function impostaOrari(o) { ORARI = Object.assign({}, MOMENTI_DEF, o || {}); }
+function oraMin(m) { const [h, mi] = String(ORARI[m] || '00:00').split(':').map(Number); return (h || 0) * 60 + (mi || 0); }
 
 /* Le terapie a orario (non "al bisogno") consumano a scatti, dose per dose */
 function discreto(t) { return modoApertura(t) || !!(t.schema && t.schema.tipo !== 'bisogno'); }
@@ -72,8 +76,8 @@ function eventiGiorno(t, day) {
   }
   if (s.tipo === 'settimanale' && !(s.giorni || []).includes((day.getDay() + 6) % 7)) return [];
   const volte = s.volte || 1;
-  const mom = (s.momenti || []).filter(m => ORE_MOMENTI[m] != null);
-  if (mom.length === volte) return mom.map(m => [new Date(day.getFullYear(), day.getMonth(), day.getDate(), ORE_MOMENTI[m]).getTime(), d]);
+  const mom = (s.momenti || []).map(m => MOMENTI_VECCHI[m] || m).filter(m => ORARI[m] != null);
+  if (mom.length === volte) return mom.map(m => [new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, oraMin(m)).getTime(), d]).sort((a, b) => a[0] - b[0]);
   return [[ts0, d * volte]];
 }
 function limiti(t) {

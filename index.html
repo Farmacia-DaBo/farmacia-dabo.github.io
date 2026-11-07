@@ -275,7 +275,7 @@ const num = v => { if (v === '' || v == null) return null; const n = parseFloat(
 const COLORI = ['#0E8F84','#2F6BD6','#7C5CE0','#D2457A','#D98A0B','#1C9460','#0891B2','#B5532E'];
 const GIORNI = ['L','M','M','G','V','S','D'];
 const GIORNI_L = ['lun','mar','mer','gio','ven','sab','dom'];
-const MOMENTI = ['Mattina','Pranzo','Pomeriggio','Sera','Notte'];
+const MOMENTI = ['Colazione','Pranzo','Pomeriggio','Cena','Notte'];
 
 function fmtN(n) { if (n == null || !isFinite(n)) return '–'; return (Math.round(n * 100) / 100).toLocaleString('it-IT', { maximumFractionDigits: 2 }); }
 function fmtQ(n) { if (n == null || n <= 0) return '0'; return fmtN(n >= 20 ? Math.floor(n) : Math.floor(n * 4 + 1e-6) / 4); }
@@ -356,6 +356,10 @@ function nuovoDb() { return { versione: 1, persone: [], terapie: [], movimenti: 
 function migra(d) {
   d.persone ||= []; d.terapie ||= []; d.movimenti ||= [];
   d.impostazioni = Object.assign(impostazioniDefault(), d.impostazioni || {});
+  d.impostazioni.orari = Object.assign({}, MOMENTI_DEF, d.impostazioni.orari || {});
+  // v1.5: Mattina → Colazione, Sera → Cena
+  for (const t of d.terapie) if (t.schema && Array.isArray(t.schema.momenti)) t.schema.momenti = [...new Set(t.schema.momenti.map(m => MOMENTI_VECCHI[m] || m))];
+  impostaOrari(d.impostazioni.orari);
   return d;
 }
 let saveTimer = null;
@@ -771,6 +775,7 @@ function vAltro() {
   let h = header('Altro', 'Impostazioni e backup');
   h += `<div class="rows" style="margin-top:4px"><button class="set" data-a="guida"><div class="si">${ic('info','s')}</div><div class="bx"><b>Guida all'uso</b><small>Come funzionano scorte, riordino, inventario e backup</small></div>${ic('right')}</button></div>
   <div class="sec">Riordino</div><div class="rows">
+    <button class="set" data-a="orari"><div class="si">${ic('clock','s')}</div><div class="bx"><b>Orari dei momenti</b><small>${MOMENTI.map(m => m + ' ' + imp.orari[m]).join(' · ')}</small></div>${ic('right')}</button>
     <button class="set" data-a="setNum" data-id="sogliaDefault"><div class="si">${ic('clock','s')}</div><div class="bx"><b>Anticipo per la ricetta</b><small>Giorni di margine predefiniti per chiedere al medico e ritirare</small></div><span class="vl">${imp.sogliaDefault} gg</span></button>
     <button class="set" data-a="setNum" data-id="giorniGiallo"><div class="si">${ic('alert','s')}</div><div class="bx"><b>Preavviso</b><small>Giorni prima della soglia in cui il farmaco diventa giallo</small></div><span class="vl">${imp.giorniGiallo} gg</span></button>
     <button class="set" data-a="setNum" data-id="copertura"><div class="si">${ic('box','s')}</div><div class="bx"><b>Copertura richiesta</b><small>Giorni da coprire quando suggerisce quante confezioni chiedere</small></div><span class="vl">${imp.copertura} gg</span></button>
@@ -786,7 +791,7 @@ function vAltro() {
     <button class="set" data-a="reset"><div class="si" style="background:var(--red-soft);color:var(--red)">${ic('trash','s')}</div><div class="bx"><b style="color:var(--red)">Cancella tutti i dati</b><small>Persone, terapie e storico</small></div></button>
   </div>
   <input type="file" id="file-imp" accept="application/json,.json" hidden>
-  <p class="foot-note">Farmacia · v1.4<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
+  <p class="foot-note">Farmacia · v1.5<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
   return h;
 }
 
@@ -798,7 +803,7 @@ const GUIDA = [
     <p>3. Indica quante unità ha una confezione e la <b>scorta che avete in casa adesso</b>, contando anche le scatole aperte.</p>
     <p>Ogni telefono tiene i propri dati, separati da quelli degli altri.</p>`],
   ['pill', 'Come calcola la scorta', `
-    <p>Ogni dose intera viene scalata all'orario del momento scelto: <b>mattina 8, pranzo 13, pomeriggio 17, sera 20, notte 22</b>.</p>
+    <p>I momenti sono <b>colazione, pranzo, pomeriggio, cena e notte</b> (prima di dormire). Ogni dose intera viene scalata all'orario del momento scelto: di base 8, 13, 17, 20 e 22, ma puoi cambiarli in <b>Altro → Orari dei momenti</b> mettendo l'ora in cui li prendete davvero.</p>
     <p>Se non scegli i momenti, o ne scegli meno delle volte al giorno, la dose del giorno viene scalata a mezzanotte. Così la stima è al massimo una dose più bassa del reale, mai più alta.</p>
     <p>I farmaci <b>al bisogno</b> calano poco alla volta, in base al consumo settimanale stimato. Puoi anche impostare una scorta minima sotto la quale ricevere l'avviso.</p>
     <p><b>Basta fino al</b> è l'ultimo giorno coperto, <b>senza dal</b> è il primo giorno in cui mancherebbe una dose.</p>`],
@@ -922,7 +927,7 @@ function formTerapia(t, pid) {
       </div>
       <div class="f" id="box-ogniN"><label>Ogni quanti giorni</label>${stepper('ogniN', sc.ogniN, 2, 1)}</div>
       <div class="f" id="box-giorni"><label>Giorni della settimana</label><div class="toggles">${GIORNI.map((g, i) => `<button type="button" class="tg round ${sc.giorni.includes(i) ? 'on' : ''}" data-g="${i}">${g}</button>`).join('')}</div></div>
-      <div class="f"><label>Momenti</label><div class="toggles">${MOMENTI.map(m => `<button type="button" class="tg ${sc.momenti.includes(m) ? 'on' : ''}" data-m="${m}">${m}</button>`).join('')}</div><div class="hint">Se ne scegli tanti quante sono le volte al giorno, la scorta scala la dose a quell'ora (mattina 8, pranzo 13, pomeriggio 17, sera 20, notte 22). Altrimenti la scala a inizio giornata.</div></div>
+      <div class="f"><label>Momenti</label><div class="toggles">${MOMENTI.map(m => `<button type="button" class="tg ${sc.momenti.includes(m) ? 'on' : ''}" data-m="${m}">${m} <span style="font-weight:500;opacity:.7">${ORARI[m]}</span></button>`).join('')}</div><div class="hint">Se ne scegli tanti quante sono le volte al giorno, la scorta scala la dose a quell'ora. Altrimenti la scala a inizio giornata. Gli orari si cambiano in Altro → Orari dei momenti.</div></div>
     </div>
     <div id="box-bisogno">
       <div class="grid2">
@@ -1114,6 +1119,20 @@ function formCorreggi(t) {
     () => { $('#sh-b').querySelectorAll('[data-sg]').forEach(b => b.onclick = () => { segno = +b.dataset.sg; $('#sh-b').querySelectorAll('[data-sg]').forEach(x => x.classList.toggle('on', x === b)); }); },
     `${t.nome} · stima attuale ${scortaTxt(t, stima(t))}`);
 }
+function formOrari() {
+  const o = db.impostazioni.orari;
+  sheetOk = () => {
+    const nuovi = {};
+    for (const m of MOMENTI) { const x = v('o-' + m); if (!/^\d{2}:\d{2}$/.test(x)) { toast('Orario non valido: ' + m); return false; } nuovi[m] = x; }
+    // fissa le scorte con gli orari vecchi, poi applica i nuovi (così nessuna dose viene contata due volte o persa)
+    const now = Date.now();
+    for (const t of db.terapie) if (t.stato === 'attiva') fissa(t, now);
+    db.impostazioni.orari = nuovi; impostaOrari(nuovi); salva(); toast('Orari aggiornati'); return true;
+  };
+  apriSheet('Orari dei momenti', MOMENTI.map(m => `<div class="f" style="display:flex;align-items:center;gap:12px"><label style="flex:1;margin:0;font-size:15px;color:var(--text)">${m}</label><input type="time" id="f-o-${m}" value="${o[m]}" style="width:140px"></div>`).join('') +
+    `<p class="muted" style="font-size:12.5px;margin:4px 2px 0">È l'ora in cui la dose viene scalata dalla scorta. Mettete quella in cui di solito prendete i farmaci.</p>`,
+    `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">Salva</button>`);
+}
 function formNumero(key) {
   const lab = { sogliaDefault: 'Anticipo per la ricetta', giorniGiallo: 'Preavviso', copertura: 'Copertura richiesta', promemoriaInventario: 'Promemoria inventario' }[key];
   sheetOk = () => { const n = Math.round(num(v('n'))); if (!(n >= 0)) { toast('Valore non valido'); return false; } db.impostazioni[key] = n; salva(); return true; };
@@ -1196,6 +1215,7 @@ const A = {
     salva(); render(); scrollTo(0, 0); toast('Inventario salvato');
   },
   setNum: id => formNumero(id),
+  orari: () => formOrari(),
   guida: () => push({ name: 'guida' }),
   tema: id => { db.impostazioni.tema = id; applicaTema(); salva(); render(); },
   notifiche: async () => {
@@ -1221,7 +1241,7 @@ const A = {
   importa: () => { const i = $('#file-imp'); i.value = ''; i.onchange = importaFile; i.click(); },
   reset: async () => {
     if (!await conferma('Cancellare tutto?', 'Persone, terapie e storico di questo telefono verranno eliminati. Fai prima un backup se ti serve.', 'Cancella tutto', true)) return;
-    db = nuovoDb(); salva(); applicaTema(); tab('home'); toast('Dati cancellati');
+    db = migra(nuovoDb()); salva(); applicaTema(); tab('home'); toast('Dati cancellati');
   }
 };
 async function importaFile(e) {

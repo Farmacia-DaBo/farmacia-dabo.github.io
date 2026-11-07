@@ -1,6 +1,6 @@
 /* Farmacia — service worker */
 importScripts('core.js');
-const CACHE = 'farmacia-v1.4.0';
+const CACHE = 'farmacia-v1.5.0';
 const FILES = ['./', './index.html', './core.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png', './icons/badge-96.png'];
 
@@ -35,6 +35,7 @@ self.addEventListener('fetch', e => {
 
 async function controllo() {
   const db = await IDB.get('stato');
+  if (db && db.impostazioni) impostaOrari(db.impostazioni.orari);
   if (!db || !db.impostazioni || !db.impostazioni.notifiche) return;
   db.impostazioni = Object.assign(impostazioniDefault(), db.impostazioni);
   const av = testoAvviso(db);
