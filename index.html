@@ -277,7 +277,7 @@ function scortaTxt(t, s) {
   const f = flaconiInfo(t, s);
   return `${f.chiusi ? chiusoTxt(t, f.chiusi) + ' + ' : ''}1 ${flacone(t) ? 'aperto' : 'aperta'} (${Math.ceil(f.rem - 1e-6)} gg)`;
 }
-function giorniDa(iso) { return iso ? Math.max(0, (oggi0() - parseData(iso)) / DAY) : 0; }
+function giorniDa(iso) { return iso ? Math.max(0, Math.round((oggi0() - parseData(iso)) / DAY)) : 0; }
 function fmtD(ts, anno) { if (ts == null) return '–'; const d = new Date(ts); const o = { day: 'numeric', month: 'short' }; if (anno || d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric'; return d.toLocaleDateString('it-IT', o).replace('.', ''); }
 function fmtDT(ts) { const d = new Date(ts); return fmtD(ts) + ' · ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); }
 function rel(ts) { const g = Math.round((oggi0(new Date(ts)) - oggi0()) / DAY); if (g === 0) return 'oggi'; if (g === 1) return 'domani'; if (g === -1) return 'ieri'; return g > 0 ? `tra ${g} giorni` : `${-g} giorni fa`; }
@@ -403,7 +403,7 @@ function medCard(t, a, showPers = true) {
     else if (a.livello === 'giallo') tags.push(`<span class="tag amber">Ricetta entro ${fmtD(a.entro)}</span>`);
   }
   const sub = t.stato === 'attiva' && a.rate > 0 && !a.copreFine && a.esaurimento
-    ? `finisce ${fmtD(a.esaurimento)}`
+    ? `basta fino al ${fmtD(a.esaurimento - 1)}`
     : t.stato === 'conclusa' ? `${fmtD(parseData(t.inizio))} → ${t.fine ? fmtD(parseData(t.fine)) : '–'}`
     : scortaTxt(t, a.stima);
   return `<button class="med lv-${a.livello}" data-a="apriTerapia" data-id="${t.id}">
@@ -438,7 +438,7 @@ function vHome() {
   if (urg.length) {
     h += `<button class="hero warn" data-a="tab" data-id="riordino"><div class="hi">${ic('alert')}</div><div><b>${urg.length === 1 ? '1 farmaco da riordinare' : urg.length + ' farmaci da riordinare'}</b><span>${esc(urg.slice(0, 2).map(x => x.t.nome).join(', '))}${urg.length > 2 ? '…' : ''} · apri la lista per il medico</span></div></button>`;
   } else {
-    h += `<div class="hero"><div class="hi">${ic('shield')}</div><div><b>Scorte sotto controllo</b><span>${prossimo ? `Il primo a finire: ${esc(prossimo.t.nome)}, ${fmtD(prossimo.a.esaurimento)}` : 'Nessun farmaco in esaurimento'}</span></div></div>`;
+    h += `<div class="hero"><div class="hi">${ic('shield')}</div><div><b>Scorte sotto controllo</b><span>${prossimo ? `Il primo a finire: ${esc(prossimo.t.nome)}, basta fino al ${fmtD(prossimo.a.esaurimento - 1)}` : 'Nessun farmaco in esaurimento'}</span></div></div>`;
   }
   h += `<div class="tiles">
     <div class="tile"><b>${attive.length}</b><span>terapie attive</span></div>
@@ -576,7 +576,7 @@ function vTerapia() {
     <div class="stat"><span>Giorni di copertura</span><b>${t.stato !== 'attiva' ? '—' : ggTxt(a.giorni)}</b><small>1 ${contenitore(t, 1)} = ${Math.floor(fi.L)} gg${ru > 0 && t.unitaConf / ru < t.apertura ? ' (finisce prima della validità)' : ''}</small></div>`; })() : `
     <div class="stat"><span>Scorta stimata</span><b>${fmtQ(a.stima)} <small>${esc(unita(t, a.stima))}</small></b>${conf != null ? `<small>≈ ${fmtN(Math.max(0, Math.floor(conf * 10) / 10))} confezioni</small>` : ''}</div>
     <div class="stat"><span>Giorni di copertura</span><b>${t.stato !== 'attiva' ? '—' : a.rate ? ggTxt(a.giorni) : '—'}</b><small>${a.rate ? fmtN(a.rate) + ' ' + esc(unita(t, a.rate)) + ' al giorno' : 'consumo non fisso'}</small></div>`}
-    <div class="stat"><span>Finisce il</span><b>${t.stato === 'attiva' && a.esaurimento && !a.copreFine ? fmtD(a.esaurimento) : '—'}</b><small>${t.stato === 'attiva' && a.esaurimento && !a.copreFine ? rel(a.esaurimento) : a.copreFine ? 'copre la terapia' : ''}</small></div>
+    <div class="stat"><span>Basta fino al</span><b>${t.stato === 'attiva' && a.esaurimento && !a.copreFine ? fmtD(a.esaurimento - 1) : '—'}</b><small>${t.stato === 'attiva' && a.esaurimento && !a.copreFine ? 'senza dal ' + fmtD(a.esaurimento) : a.copreFine ? 'copre la terapia' : ''}</small></div>
     <div class="stat"><span>Chiedi la ricetta entro</span><b style="${a.entro && a.entro < Date.now() ? 'color:var(--red)' : ''}">${t.stato === 'attiva' && a.entro && !a.copreFine ? (a.entro < Date.now() ? 'Subito' : fmtD(a.entro)) : '—'}</b><small>${a.soglia} giorni di anticipo</small></div></div>`;
 
   // azioni
@@ -646,7 +646,7 @@ function vRiordino() {
       h += `<div class="rows"><div class="grp-h"><div class="gi">${ic('steth','s')}</div><b>${esc(med)}</b><span class="muted" style="font-size:13px">${list.length}</span></div>` +
         list.map(x => {
           const p = persona(x.t.pid); const s = selR[x.t.id];
-          const quando = x.a.livello === 'esaurito' ? '<span class="neg">esaurito</span>' : x.a.rate ? `finisce ${fmtD(x.a.esaurimento)}` : `restano ${fmtQ(x.a.stima)}`;
+          const quando = x.a.livello === 'esaurito' ? '<span class="neg">esaurito</span>' : x.a.rate && x.a.esaurimento ? `basta fino al ${fmtD(x.a.esaurimento - 1)}` : `restano ${fmtQ(x.a.stima)}`;
           return `<div class="ri"><button class="ck ${s.sel ? 'on' : ''}" data-a="selR" data-id="${x.t.id}">${ic('check')}</button>
             <div class="bx"><div class="nm">${esc(x.t.nome)} ${x.t.dosaggio ? `<span class="muted" style="font-weight:400">${esc(x.t.dosaggio)}</span>` : ''}</div>
             <div class="ds">${p ? esc(p.nome) + ' · ' : ''}${quando}</div></div>
@@ -762,7 +762,7 @@ function vAltro() {
     <button class="set" data-a="reset"><div class="si" style="background:var(--red-soft);color:var(--red)">${ic('trash','s')}</div><div class="bx"><b style="color:var(--red)">Cancella tutti i dati</b><small>Persone, terapie e storico</small></div></button>
   </div>
   <input type="file" id="file-imp" accept="application/json,.json" hidden>
-  <p class="foot-note">Farmacia · v1.1<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
+  <p class="foot-note">Farmacia · v1.2<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
   return h;
 }
 
@@ -848,7 +848,7 @@ function formTerapia(t, pid) {
       </div>
       <div class="f" id="box-ogniN"><label>Ogni quanti giorni</label>${stepper('ogniN', sc.ogniN, 2, 1)}</div>
       <div class="f" id="box-giorni"><label>Giorni della settimana</label><div class="toggles">${GIORNI.map((g, i) => `<button type="button" class="tg round ${sc.giorni.includes(i) ? 'on' : ''}" data-g="${i}">${g}</button>`).join('')}</div></div>
-      <div class="f"><label>Momenti (facoltativo, per lo storico)</label><div class="toggles">${MOMENTI.map(m => `<button type="button" class="tg ${sc.momenti.includes(m) ? 'on' : ''}" data-m="${m}">${m}</button>`).join('')}</div></div>
+      <div class="f"><label>Momenti</label><div class="toggles">${MOMENTI.map(m => `<button type="button" class="tg ${sc.momenti.includes(m) ? 'on' : ''}" data-m="${m}">${m}</button>`).join('')}</div><div class="hint">Se ne scegli tanti quante sono le volte al giorno, la scorta scala la dose a quell'ora (mattina 8, pranzo 13, pomeriggio 17, sera 20, notte 22). Altrimenti la scala a inizio giornata.</div></div>
     </div>
     <div id="box-bisogno">
       <div class="grid2">
@@ -933,7 +933,7 @@ function formTerapia(t, pid) {
       Object.assign(t, dati);
       const isA = modoApertura(t);
       if (wasA !== isA || (isA && Math.abs(vitaConf(t) - Lold) > 1e-6)) t.scortaBase = isA ? eqConf * vitaConf(t) : eqConf * t.unitaConf;
-      if (firma(t) !== prima) mov(t.id, 'variazione', { da: primaTxt, a: posologia(t) });
+      if (firma(t) !== prima) { let dopo = posologia(t); if (dopo === primaTxt) dopo += t.apertura ? ` · validità ${t.apertura} gg dall'apertura` : ' · senza validità dopo l\'apertura'; mov(t.id, 'variazione', { da: primaTxt, a: dopo }); }
       toast('Modifiche salvate');
     }
     salva(); return true;

@@ -54,12 +54,46 @@ function flaconiInfo(t, s) {
 /* Velocità con cui cala la scorta memorizzata (unità o giorni di flacone) */
 function rateGiornaliero(t) { return modoApertura(t) ? 1 : rateUnita(t); }
 
+/* Orari indicativi dei momenti: la dose viene scalata a quell'ora */
+const ORE_MOMENTI = { Mattina: 8, Pranzo: 13, Pomeriggio: 17, Sera: 20, Notte: 22 };
+
+/* Le terapie a orario (non "al bisogno") consumano a scatti, dose per dose */
+function discreto(t) { return modoApertura(t) || !!(t.schema && t.schema.tipo !== 'bisogno'); }
+
+/* Dosi previste in un giorno: [[timestamp, quantità], …] */
+function eventiGiorno(t, day) {
+  const ts0 = day.getTime();
+  if (modoApertura(t)) return [[ts0, 1]];
+  const s = t.schema || {}; const d = +t.dose || 0; if (!d) return [];
+  if (s.tipo === 'ogniN') {
+    const anc = oggi0(new Date(t.inizio ? parseData(t.inizio) : (t.creato || ts0)));
+    const N = Math.max(1, s.ogniN || 1); const k = Math.round((ts0 - anc) / DAY);
+    if (((k % N) + N) % N !== 0) return [];
+  }
+  if (s.tipo === 'settimanale' && !(s.giorni || []).includes((day.getDay() + 6) % 7)) return [];
+  const volte = s.volte || 1;
+  const mom = (s.momenti || []).filter(m => ORE_MOMENTI[m] != null);
+  if (mom.length === volte) return mom.map(m => [new Date(day.getFullYear(), day.getMonth(), day.getDate(), ORE_MOMENTI[m]).getTime(), d]);
+  return [[ts0, d * volte]];
+}
+function limiti(t) {
+  return { ini: t.inizio ? parseData(t.inizio) : -Infinity, fin: t.fine ? parseData(t.fine) + DAY : Infinity };
+}
+
 function consumo(t, da, a) {
-  const r = rateGiornaliero(t); if (!r) return 0;
-  const ini = t.inizio ? parseData(t.inizio) : -Infinity;
-  const fin = t.fine ? parseData(t.fine) + DAY : Infinity;
-  const x = Math.max(da, ini), y = Math.min(a, fin);
-  return y > x ? r * (y - x) / DAY : 0;
+  if (!(a > da)) return 0;
+  const { ini, fin } = limiti(t);
+  if (!discreto(t)) {
+    const r = rateUnita(t); const x = Math.max(da, ini), y = Math.min(a, fin);
+    return r && y > x ? r * (y - x) / DAY : 0;
+  }
+  let tot = 0; const d0 = new Date(oggi0(new Date(da)));
+  for (let i = 0; i < 4000; i++) {
+    const day = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i);
+    if (day.getTime() > a) break;
+    for (const [ts, q] of eventiGiorno(t, day)) if (ts > da && ts <= a && ts >= ini && ts < fin) tot += q;
+  }
+  return tot;
 }
 
 function stima(t, now = Date.now()) {
@@ -67,23 +101,41 @@ function stima(t, now = Date.now()) {
   return t.scortaBase - consumo(t, t.dataBase, now);
 }
 
+/* Prima dose che la scorta non riesce a coprire (= giorno in cui si resta senza) */
+function simula(t, s, now) {
+  const { ini, fin } = limiti(t);
+  if (!discreto(t)) {
+    const r = rateUnita(t); if (!r) return { esaur: null, copreFine: false };
+    const e = Math.max(now, ini) + Math.max(0, s) / r * DAY;
+    return { esaur: e, copreFine: fin !== Infinity && e >= fin };
+  }
+  let rem = Math.max(0, s); const d0 = new Date(oggi0(new Date(now)));
+  for (let i = 0; i < 3700; i++) {
+    const day = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i);
+    if (day.getTime() >= fin) return { esaur: null, copreFine: true };
+    for (const [ts, q] of eventiGiorno(t, day)) {
+      if (ts <= now || ts < ini || ts >= fin) continue;
+      if (rem < q - 1e-6) return { esaur: ts, copreFine: false };
+      rem -= q;
+    }
+  }
+  return { esaur: null, copreFine: false };
+}
+
 const RANK = { esaurito: 0, rosso: 1, giallo: 2, verde: 3, ok: 4, inattiva: 5 };
 
 function analisi(t, imp, now = Date.now()) {
   const s = stima(t, now), r = rateGiornaliero(t);
   const soglia = t.soglia != null ? t.soglia : imp.sogliaDefault;
-  const ini = t.inizio ? parseData(t.inizio) : null;
-  const fin = t.fine ? parseData(t.fine) + DAY : null;
-  let esaur = null;
-  if (r > 0) esaur = Math.max(now, ini || now) + Math.max(0, s) / r * DAY;
+  let esaur = null, copreFine = false;
+  if (r > 0 && t.stato === 'attiva') ({ esaur, copreFine } = simula(t, s, now));
   const giorni = esaur ? (esaur - now) / DAY : Infinity;
-  const copreFine = !!(fin && esaur && esaur + DAY >= fin);
   let livello;
   if (t.stato !== 'attiva') livello = 'inattiva';
   else if (!modoApertura(t) && t.schema && t.schema.tipo === 'bisogno' && t.scortaMin != null && s <= t.scortaMin) livello = s <= 0.001 ? 'esaurito' : 'rosso';
   else if (r === 0) livello = (t.scortaMin != null && s <= t.scortaMin) ? (s <= 0.001 ? 'esaurito' : 'rosso') : 'ok';
   else if (copreFine) livello = 'ok';
-  else if (s <= 0.001) livello = 'esaurito';
+  else if (s <= 0.001 || (esaur && esaur - now < DAY && s < (+t.dose || 1) - 1e-6 && !modoApertura(t))) livello = 'esaurito';
   else if (giorni <= soglia) livello = 'rosso';
   else if (giorni <= soglia + imp.giorniGiallo) livello = 'giallo';
   else livello = 'verde';
