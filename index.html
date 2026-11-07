@@ -237,6 +237,15 @@ details.inv-s[open]{padding-bottom:8px}
 .toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 16px;border-radius:14px;font-size:14px;font-weight:550;z-index:30;display:flex;gap:12px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:up .25s;max-width:92vw}
 .toast button{color:var(--pri-2);font-weight:700}
 [data-theme=dark] .toast button{color:var(--pri)}
+details.guida{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:0 15px}
+details.guida summary{list-style:none;display:flex;align-items:center;gap:12px;padding:13px 0;cursor:pointer}
+details.guida summary::-webkit-details-marker{display:none}
+details.guida summary b{flex:1;font-size:15px}
+details.guida summary .gi{width:34px;height:34px;border-radius:11px;background:var(--pri-soft);color:var(--pri);display:grid;place-items:center;flex:none}
+details.guida summary>svg:last-child{color:var(--muted);transition:transform .2s}
+details.guida[open] summary>svg:last-child{transform:rotate(90deg)}
+.gt{font-size:14px;line-height:1.55;padding:0 0 12px 46px}
+.gt p{margin:0 0 9px}
 .foot-note{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
 </style>
 </head>
@@ -368,12 +377,12 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => db
 
 /* ---------- render ---------- */
 const TABS = [['home','home','Oggi'],['persone','users','Persone'],['riordino','clip','Riordino'],['inventario','box','Inventario'],['altro','sliders','Altro']];
-function tabAttiva() { const n = view.name; if (n === 'persona' || n === 'terapia') return stack.length ? (stack[0].name) : 'persone'; return n; }
+function tabAttiva() { const n = view.name; if (n === 'guida') return 'altro'; if (n === 'persona' || n === 'terapia') return stack.length ? (stack[0].name) : 'persone'; return n; }
 function render() {
   const nDa = daGestire(db).length;
   const att = tabAttiva();
   $('#tabs').innerHTML = TABS.map(([k, i, l]) => `<button class="${att === k ? 'on' : ''}" data-a="tab" data-id="${k}"><span class="pb">${ic(i)}</span>${l}${k === 'riordino' && nDa ? `<span class="nb">${nDa}</span>` : ''}</button>`).join('');
-  const fn = { home: vHome, persone: vPersone, persona: vPersona, terapia: vTerapia, riordino: vRiordino, inventario: vInventario, altro: vAltro }[view.name] || vHome;
+  const fn = { home: vHome, persone: vPersone, persona: vPersona, terapia: vTerapia, riordino: vRiordino, inventario: vInventario, altro: vAltro, guida: vGuida }[view.name] || vHome;
   $('#app').innerHTML = fn();
 }
 function header(title, sub, opts = {}) {
@@ -425,7 +434,7 @@ function vHome() {
   if (!db.persone.length) {
     return h + `<div class="empty"><div class="ei">${ic('users')}</div><h3>Benvenuto in Farmacia</h3>
       <p>Aggiungi i familiari di cui segui le terapie, poi i loro farmaci con la frequenza e la scorta che avete in casa.</p>
-      <button class="btn" data-a="nuovaPersona">${ic('plus')} Aggiungi una persona</button></div>`;
+      <button class="btn" data-a="nuovaPersona">${ic('plus')} Aggiungi una persona</button><br><br><button class="btn ghost sm" data-a="guida">${ic('info','s')} Leggi la guida</button></div>`;
   }
   const now = Date.now();
   const imp = db.impostazioni;
@@ -746,7 +755,8 @@ function vAltro() {
   const imp = db.impostazioni;
   const notOk = imp.notifiche && 'Notification' in window && Notification.permission === 'granted';
   let h = header('Altro', 'Impostazioni e backup');
-  h += `<div class="sec">Riordino</div><div class="rows">
+  h += `<div class="rows" style="margin-top:4px"><button class="set" data-a="guida"><div class="si">${ic('info','s')}</div><div class="bx"><b>Guida all'uso</b><small>Come funzionano scorte, riordino, inventario e backup</small></div>${ic('right')}</button></div>
+  <div class="sec">Riordino</div><div class="rows">
     <button class="set" data-a="setNum" data-id="sogliaDefault"><div class="si">${ic('clock','s')}</div><div class="bx"><b>Anticipo per la ricetta</b><small>Giorni di margine predefiniti per chiedere al medico e ritirare</small></div><span class="vl">${imp.sogliaDefault} gg</span></button>
     <button class="set" data-a="setNum" data-id="giorniGiallo"><div class="si">${ic('alert','s')}</div><div class="bx"><b>Preavviso</b><small>Giorni prima della soglia in cui il farmaco diventa giallo</small></div><span class="vl">${imp.giorniGiallo} gg</span></button>
     <button class="set" data-a="setNum" data-id="copertura"><div class="si">${ic('box','s')}</div><div class="bx"><b>Copertura richiesta</b><small>Giorni da coprire quando suggerisce quante confezioni chiedere</small></div><span class="vl">${imp.copertura} gg</span></button>
@@ -762,8 +772,56 @@ function vAltro() {
     <button class="set" data-a="reset"><div class="si" style="background:var(--red-soft);color:var(--red)">${ic('trash','s')}</div><div class="bx"><b style="color:var(--red)">Cancella tutti i dati</b><small>Persone, terapie e storico</small></div></button>
   </div>
   <input type="file" id="file-imp" accept="application/json,.json" hidden>
-  <p class="foot-note">Farmacia · v1.2<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
+  <p class="foot-note">Farmacia · v1.3<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
   return h;
+}
+
+/* ---------- vista: Guida ---------- */
+const GUIDA = [
+  ['users', 'Per iniziare', `
+    <p>1. In <b>Persone</b> aggiungi i familiari di cui segui le terapie, con il loro medico curante.</p>
+    <p>2. Apri una persona e premi <b>+</b> per aggiungere un farmaco: nome, dosaggio, forma, quantità per volta, frequenza e momenti della giornata.</p>
+    <p>3. Indica quante unità ha una confezione e la <b>scorta che avete in casa adesso</b>, contando anche le scatole aperte.</p>
+    <p>Ogni telefono tiene i propri dati, separati da quelli degli altri.</p>`],
+  ['pill', 'Come calcola la scorta', `
+    <p>Ogni dose intera viene scalata all'orario del momento scelto: <b>mattina 8, pranzo 13, pomeriggio 17, sera 20, notte 22</b>.</p>
+    <p>Se non scegli i momenti, o ne scegli meno delle volte al giorno, la dose del giorno viene scalata a mezzanotte. Così la stima è al massimo una dose più bassa del reale, mai più alta.</p>
+    <p>I farmaci <b>al bisogno</b> calano poco alla volta, in base al consumo settimanale stimato. Puoi anche impostare una scorta minima sotto la quale ricevere l'avviso.</p>
+    <p><b>Basta fino al</b> è l'ultimo giorno coperto, <b>senza dal</b> è il primo giorno in cui mancherebbe una dose.</p>`],
+  ['alert', 'Colori e avvisi', `
+    <p><span class="tag green">Verde</span> scorta sufficiente. <span class="tag amber">Giallo</span> si avvicina il momento di chiedere la ricetta. <span class="tag red">Rosso</span> va chiesta adesso.</p>
+    <p>Il rosso scatta quando i giorni rimasti sono meno dell'<b>anticipo per la ricetta</b>: quello predefinito oppure quello impostato sul singolo farmaco. Il giallo arriva qualche giorno prima, secondo il <b>preavviso</b>. Li cambi in <b>Altro</b>.</p>
+    <p>Se una terapia ha una data di fine e la scorta basta fino ad allora, il farmaco non viene segnalato.</p>`],
+  ['clip', 'Riordino dal medico', `
+    <p>In <b>Riordino</b> trovi i farmaci da chiedere, raggruppati per medico. Il numero accanto a ognuno sono le confezioni suggerite: lo correggi con − e +.</p>
+    <p><b>Invia richiesta</b> prepara il messaggio da mandare al medico, per esempio su WhatsApp. Poi premi <b>Segna richieste</b>: i farmaci passano tra le "ricette attese".</p>
+    <p>Quando ritiri il farmaco premi <b>Ritirato</b> e conferma le confezioni: la scorta si aggiorna.</p>`],
+  ['down', 'Caricare le confezioni', `
+    <p>Dalla scheda del farmaco usa <b>Carica confezioni</b> ogni volta che ne porti a casa di nuove. Le unità sfuse servono per campioni o confezioni già aperte.</p>
+    <p>Se inserisci la <b>scadenza</b> stampata sulla scatola, l'app ti avvisa quando si avvicina.</p>`],
+  ['count', 'Inventario', `
+    <p>Ogni tanto conta quello che c'è davvero in casa: confezioni intere e unità sfuse. L'app te lo ricorda periodicamente.</p>
+    <p>L'app mostra subito la differenza rispetto alla stima: <span class="tag green">Torna</span>, <span class="tag blue">+ in più</span> o <span class="tag red">− in meno</span>. Quando salvi, riparte dai numeri contati.</p>
+    <p>Le righe lasciate <b>vuote vengono saltate</b>: puoi contare anche un solo farmaco. Per un farmaco solo c'è anche <b>Conta scorta</b> nella sua scheda.</p>
+    <p>Per piccoli aggiustamenti (una dose in più, una compressa persa) usa <b>Correggi</b>.</p>`],
+  ['refresh', 'Colliri e flaconi con validità', `
+    <p>Per colliri, gocce o sciroppi da usare entro un certo periodo dall'apertura, compila <b>Da usare entro (giorni dall'apertura)</b>, per esempio 28.</p>
+    <p>L'app ragiona in flaconi: ognuno dura il minore tra la validità e le gocce disponibili (indicativamente 1 ml ≈ 20 gocce). Nella scorta e nell'inventario chiede quanti <b>flaconi chiusi</b> hai e la <b>data di apertura</b> di quello in uso.</p>
+    <p>Il giorno prima che il flacone vada buttato compare un avviso. Se ne apri uno nuovo prima del previsto, usa <b>Aperto nuovo flacone</b>.</p>`],
+  ['flag', 'Sospendere, concludere, storico', `
+    <p><b>Sospendi</b> blocca il calo della scorta, per esempio durante un ricovero o una pausa decisa dal medico. <b>Riprendi</b> lo fa ripartire.</p>
+    <p><b>Concludi</b> chiude la terapia: resta nello <b>storico</b> della persona con le date di inizio e fine. <b>Elimina</b> invece la cancella del tutto.</p>
+    <p>Se cambi il dosaggio o la frequenza con la matita, la modifica viene annotata nello storico del farmaco.</p>`],
+  ['down', 'Backup e cambio telefono', `
+    <p>I dati restano <b>solo su questo telefono</b>. Da <b>Altro → Salva backup</b> crei un file da tenere su Drive o da mandarti via mail. L'app te lo ricorda ogni 30 giorni.</p>
+    <p>Su un telefono nuovo installi l'app e usi <b>Ripristina backup</b>.</p>`],
+  ['bell', 'Notifiche e aggiornamenti', `
+    <p>In <b>Altro → Avvisi scorte</b> attivi la notifica dei farmaci da riordinare e il numero sull'icona. Il controllo in background lo decide Android, quindi può arrivare con un po' di ritardo.</p>
+    <p>Quando esce una nuova versione, all'apertura compare <b>"Nuova versione disponibile"</b>: tocca <b>Aggiorna</b>. I dati restano.</p>`]
+];
+function vGuida() {
+  return header('Guida', 'Come usare Farmacia', { back: true, small: true }) +
+    `<div class="stack">` + GUIDA.map(([i, tit, txt], n) => `<details class="guida" ${n === 0 ? 'open' : ''}><summary><span class="gi">${ic(i, 's')}</span><b>${tit}</b>${ic('right', 's')}</summary><div class="gt">${txt}</div></details>`).join('') + `</div>`;
 }
 
 /* ---------- sheet ---------- */
@@ -1113,6 +1171,7 @@ const A = {
     salva(); render(); scrollTo(0, 0); toast('Inventario salvato');
   },
   setNum: id => formNumero(id),
+  guida: () => push({ name: 'guida' }),
   tema: id => { db.impostazioni.tema = id; applicaTema(); salva(); render(); },
   notifiche: async () => {
     const imp = db.impostazioni;
