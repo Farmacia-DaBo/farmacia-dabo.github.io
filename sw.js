@@ -1,6 +1,6 @@
 /* Farmacia — service worker */
 importScripts('core.js');
-const CACHE = 'farmacia-v1.3.1';
+const CACHE = 'farmacia-v1.4.0';
 const FILES = ['./', './index.html', './core.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png', './icons/badge-96.png'];
 

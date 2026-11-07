@@ -122,6 +122,13 @@ function simula(t, s, now) {
   return { esaur: null, copreFine: false };
 }
 
+/* Dosi di oggi il cui orario è già passato (per i conteggi fatti prima di prenderle) */
+function dosiOggiPassate(t, now = Date.now()) {
+  if (modoApertura(t) || !discreto(t) || t.stato !== 'attiva') return [];
+  const { ini, fin } = limiti(t);
+  return eventiGiorno(t, new Date(oggi0(new Date(now)))).filter(([ts]) => ts <= now && ts >= ini && ts < fin);
+}
+
 const RANK = { esaurito: 0, rosso: 1, giallo: 2, verde: 3, ok: 4, inattiva: 5 };
 
 function analisi(t, imp, now = Date.now()) {
