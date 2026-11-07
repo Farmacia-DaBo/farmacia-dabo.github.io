@@ -250,6 +250,24 @@ details.guida[open] summary>svg:last-child{transform:rotate(90deg)}
 .tg.pre{display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;font-size:12.5px;text-align:left}
 .tg.pre .pck{width:20px;height:20px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;flex:none;color:transparent}
 .tg.pre.on .pck{background:var(--pri);border-color:var(--pri);color:#fff}
+.scheda h2{margin:0;font-size:19px;letter-spacing:-.01em}
+.scheda h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:18px 0 6px;display:flex;justify-content:space-between}
+.print-only{display:none}
+.sch-h{display:flex;gap:12px;align-items:center}
+.sch-meta{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:13.5px}
+.sch-meta span,.sch-note span{display:block;font-size:11.5px;color:var(--muted)}
+.sch-note{margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--amber-soft);font-size:13.5px}
+.sch-it{padding:10px 0;border-bottom:1px solid var(--line)}
+.sch-it:last-of-type{border-bottom:0}
+.sch-n{font-size:15px}.sch-p{font-size:14px;margin-top:2px}.sch-m{font-size:12.5px;color:var(--muted);margin-top:2px}
+.sch-foot{font-size:11px;color:var(--muted);margin:16px 0 0;text-align:center}
+@media print{
+  :root,[data-theme=dark]{--bg:#fff;--surface:#fff;--surface2:#fff;--text:#000;--muted:#444;--line:#ccc;--amber-soft:#f4f4f4;--shadow:none}
+  nav.tabs,header.top,.noprint,.toast,.fab{display:none!important}
+  .app{padding:0;max-width:none}.scheda{box-shadow:none;padding:0}
+  .sch-it{break-inside:avoid}
+  .print-only{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:10px}
+}
 .foot-note{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
 </style>
 </head>
@@ -394,12 +412,12 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => db
 
 /* ---------- render ---------- */
 const TABS = [['home','home','Oggi'],['persone','users','Persone'],['riordino','clip','Riordino'],['inventario','box','Inventario'],['altro','sliders','Altro']];
-function tabAttiva() { const n = view.name; if (n === 'guida') return 'altro'; if (n === 'persona' || n === 'terapia') return stack.length ? (stack[0].name) : 'persone'; return n; }
+function tabAttiva() { const n = view.name; if (n === 'guida') return 'altro'; if (n === 'scheda') return stack.length ? stack[0].name : 'persone'; if (n === 'persona' || n === 'terapia') return stack.length ? (stack[0].name) : 'persone'; return n; }
 function render() {
   const nDa = daGestire(db).length;
   const att = tabAttiva();
   $('#tabs').innerHTML = TABS.map(([k, i, l]) => `<button class="${att === k ? 'on' : ''}" data-a="tab" data-id="${k}"><span class="pb">${ic(i)}</span>${l}${k === 'riordino' && nDa ? `<span class="nb">${nDa}</span>` : ''}</button>`).join('');
-  const fn = { home: vHome, persone: vPersone, persona: vPersona, terapia: vTerapia, riordino: vRiordino, inventario: vInventario, altro: vAltro, guida: vGuida }[view.name] || vHome;
+  const fn = { home: vHome, persone: vPersone, persona: vPersona, terapia: vTerapia, riordino: vRiordino, inventario: vInventario, altro: vAltro, guida: vGuida, scheda: vScheda }[view.name] || vHome;
   $('#app').innerHTML = fn();
 }
 function header(title, sub, opts = {}) {
@@ -477,6 +495,10 @@ function vHome() {
   if (db.terapie.some(t => t.stato === 'attiva') && giorniInv > imp.promemoriaInventario) {
     banners.push(`<button class="banner" data-a="tab" data-id="inventario"><div class="bi">${ic('count')}</div><div class="bx"><b>È ora di un inventario</b><span class="muted">${imp.ultimoInventario ? 'Ultimo ' + rel(imp.ultimoInventario) : 'Non ne hai ancora fatto uno'} · conta le confezioni in casa</span></div>${ic('right')}</button>`);
   }
+  for (const { t, p: pi } of pianiDaRinnovare(db, now).filter(x => filtro === 'tutti' || x.t.pid === filtro)) {
+    const p = persona(t.pid);
+    banners.push(`<button class="banner ${pi.livello === 'giallo' ? '' : 'red'}" data-a="apriTerapia" data-id="${t.id}"><div class="bi">${ic('shield')}</div><div class="bx"><b>Piano terapeutico · ${esc(t.nome)}${p ? ' · ' + esc(p.nome) : ''}</b><span class="muted">${pi.gg < 0 ? 'Scaduto il ' + fmtD(pi.scad, true) : 'Scade il ' + fmtD(pi.scad, true) + ' (' + rel(pi.scad) + ')'} · prenota il rinnovo${t.pianoRif ? ' (' + esc(t.pianoRif) + ')' : ''}</span></div>${ic('right')}</button>`);
+  }
   for (const t of db.terapie.filter(t => t.stato === 'attiva' && modoApertura(t) && (filtro === 'tutti' || t.pid === filtro))) {
     const s = stima(t, now); if (!(s > 0.001)) continue;
     const fi = flaconiInfo(t, s);
@@ -541,7 +563,7 @@ function vPersona() {
   const att = ordina(ts.filter(t => t.stato === 'attiva').map(t => ({ t, a: analisi(t, db.impostazioni, now) })));
   const sos = ts.filter(t => t.stato === 'sospesa').map(t => ({ t, a: analisi(t, db.impostazioni, now) }));
   const con = ts.filter(t => t.stato === 'conclusa').sort((a, b) => (b.fine || '').localeCompare(a.fine || '')).map(t => ({ t, a: analisi(t, db.impostazioni, now) }));
-  let h = header(esc(p.nome), [p.relazione, p.medico ? 'Medico: ' + p.medico : ''].filter(Boolean).map(esc).join(' · '), { back: true, small: true, right: `<button class="icon-btn" data-a="modificaPersona" data-id="${p.id}" aria-label="Modifica">${ic('edit')}</button>` });
+  let h = header(esc(p.nome), [p.relazione, p.medico ? 'Medico: ' + p.medico : ''].filter(Boolean).map(esc).join(' · '), { back: true, small: true, right: `<button class="icon-btn" data-a="scheda" data-id="${p.id}" aria-label="Scheda terapie">${ic('clip')}</button><button class="icon-btn" data-a="modificaPersona" data-id="${p.id}" aria-label="Modifica">${ic('edit')}</button>` });
   if (p.note) h += `<div class="card" style="font-size:14px"><span class="lbl" style="margin:0 0 4px">Note</span>${esc(p.note).replace(/\n/g, '<br>')}</div>`;
   h += `<div class="sec">Terapie in corso <small>${att.length}</small></div>`;
   h += att.length ? `<div class="stack">${att.map(x => medCard(x.t, x.a, false)).join('')}</div>`
@@ -564,7 +586,7 @@ function posologia(t) {
   else if (s.tipo === 'settimanale') fr = `${v > 1 ? v + ' volte, ' : ''}${(s.giorni || []).length === 7 ? 'tutti i giorni' : (s.giorni || []).map(g => GIORNI_L[g]).join(', ')}`;
   return `${d} · ${fr}${s.momenti && s.momenti.length ? ` (${s.momenti.join(', ').toLowerCase()})` : ''}`;
 }
-const MOV_IC = { iniziale: 'box', carico: 'down', inventario: 'count', correzione: 'pm', variazione: 'edit', sospesa: 'pause', ripresa: 'play', conclusa: 'flag', riattivata: 'refresh', richiesta: 'steth', apertura: 'refresh' };
+const MOV_IC = { iniziale: 'box', carico: 'down', inventario: 'count', correzione: 'pm', variazione: 'edit', sospesa: 'pause', ripresa: 'play', conclusa: 'flag', riattivata: 'refresh', richiesta: 'steth', apertura: 'refresh', piano: 'shield' };
 function movTesto(m, t) {
   const u = n => esc(unitaS(t, Math.abs(n)));
   switch (m.tipo) {
@@ -579,6 +601,7 @@ function movTesto(m, t) {
     case 'conclusa': return 'Terapia conclusa';
     case 'riattivata': return 'Terapia riattivata';
     case 'apertura': return `Aperto un nuovo ${contenitore(t, 1)}${m.scartati ? ` <small>Il precedente aveva ancora ${Math.round(m.scartati)} gg</small>` : ''}`;
+    case 'piano': return `Piano terapeutico rinnovato fino al ${fmtD(parseData(m.a), true)}${m.da ? `<small>Prima scadeva il ${fmtD(parseData(m.da), true)}</small>` : ''}`;
     case 'richiesta': return `Ricetta chiesta al medico${m.conf ? ` (${m.conf} conf.)` : ''}`;
     default: return m.tipo;
   }
@@ -632,6 +655,7 @@ function vTerapia() {
     <div class="row"><span>Confezione</span><span>${t.unitaConf ? fmtN(t.unitaConf) + ' ' + esc(unita(t, t.unitaConf)) : '–'}</span></div>
     ${modoApertura(t) ? `<div class="row"><span>Validità dopo l'apertura</span><span>${t.apertura} giorni</span></div>${t.stato === 'attiva' && a.stima > 0.001 ? `<div class="row"><span>Cambio ${contenitore(t, 1)}</span><span>${fmtD(Date.now() + flaconiInfo(t, a.stima).rem * DAY)}</span></div>` : ''}` : ''}
     <div class="row"><span>Medico</span><span>${esc(t.medico || '–')}</span></div>
+    ${t.pianoScad ? (() => { const pi = statoPiano(t); const cl = !pi ? '' : pi.livello === 'ok' ? 'green' : pi.livello === 'giallo' ? 'amber' : 'red'; return `<button class="row" data-a="rinnovaPiano" data-id="${t.id}"><span>Piano terapeutico${t.pianoRif ? '<br><small>' + esc(t.pianoRif) + '</small>' : ''}</span><span>fino al ${fmtD(parseData(t.pianoScad), true)} ${pi ? `<span class="tag ${cl}">${pi.gg < 0 ? 'scaduto' : pi.livello === 'ok' ? 'valido' : 'rinnova'}</span>` : ''}</span></button>`; })() : ''}
     ${t.schema.tipo === 'bisogno' ? `<div class="row"><span>Avvisa sotto</span><span>${t.scortaMin != null ? fmtN(t.scortaMin) + ' ' + esc(unita(t, t.scortaMin)) : '–'}</span></div>` : ''}
     ${t.note ? `<div class="row"><span>Note</span><span style="font-weight:400">${esc(t.note)}</span></div>` : ''}
     ${t.stato === 'attiva' ? `<button class="row" data-a="eliminaTerapia" data-id="${t.id}"><span style="color:var(--red)">Elimina terapia e storico</span><span>${ic('trash','s')}</span></button>` : ''}
@@ -675,7 +699,7 @@ function vRiordino() {
           const quando = x.a.livello === 'esaurito' ? '<span class="neg">esaurito</span>' : x.a.rate && x.a.esaurimento ? `basta fino al ${fmtD(x.a.esaurimento - 1)}` : `restano ${fmtQ(x.a.stima)}`;
           return `<div class="ri"><button class="ck ${s.sel ? 'on' : ''}" data-a="selR" data-id="${x.t.id}">${ic('check')}</button>
             <div class="bx"><div class="nm">${esc(x.t.nome)} ${x.t.dosaggio ? `<span class="muted" style="font-weight:400">${esc(x.t.dosaggio)}</span>` : ''}</div>
-            <div class="ds">${p ? esc(p.nome) + ' · ' : ''}${quando}</div></div>
+            <div class="ds">${p ? esc(p.nome) + ' · ' : ''}${quando}${(() => { const pi = statoPiano(x.t); return pi && pi.livello !== 'ok' && pi.livello !== 'giallo' ? ` · <span class="neg">piano ${pi.gg < 0 ? 'scaduto' : 'scade ' + fmtD(pi.scad)}</span>` : ''; })()}</div></div>
             <div class="mini-step"><button data-a="confR" data-id="${x.t.id}" data-d="-1">−</button><b>${s.conf}</b><button data-a="confR" data-id="${x.t.id}" data-d="1">+</button></div></div>`;
         }).join('') +
         `<div class="grp-f"><button class="btn sm soft" data-a="condividi" data-id="${esc(med)}" ${n ? '' : 'disabled'}>${ic('share','s')} Invia richiesta</button><button class="btn sm" data-a="segnaRichieste" data-id="${esc(med)}" ${n ? '' : 'disabled'}>${ic('check','s')} Segna richieste</button></div></div>`;
@@ -791,8 +815,58 @@ function vAltro() {
     <button class="set" data-a="reset"><div class="si" style="background:var(--red-soft);color:var(--red)">${ic('trash','s')}</div><div class="bx"><b style="color:var(--red)">Cancella tutti i dati</b><small>Persone, terapie e storico</small></div></button>
   </div>
   <input type="file" id="file-imp" accept="application/json,.json" hidden>
-  <p class="foot-note">Farmacia · v1.5<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
+  <p class="foot-note">Farmacia · v1.6<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
   return h;
+}
+
+/* ---------- vista: Scheda terapie ---------- */
+function ordinaMomento(a, b) {
+  const k = t => { const m = (t.schema?.momenti || [])[0]; return m && ORARI[m] ? oraMin(m) : (t.schema?.tipo === 'bisogno' ? 9999 : 0); };
+  return k(a) - k(b) || a.nome.localeCompare(b.nome);
+}
+function schedaDati(p) {
+  const ts = db.terapie.filter(t => t.pid === p.id);
+  const lim = Date.now() - 183 * DAY;
+  return {
+    att: ts.filter(t => t.stato === 'attiva').sort(ordinaMomento),
+    sos: ts.filter(t => t.stato === 'sospesa').sort(ordinaMomento),
+    con: ts.filter(t => t.stato === 'conclusa' && t.fine && parseData(t.fine) >= lim).sort((a, b) => b.fine.localeCompare(a.fine))
+  };
+}
+function schedaExtra(t) {
+  const cur = persona(t.pid)?.medico || '';
+  return [t.inizio ? 'dal ' + fmtD(parseData(t.inizio), true) : '', t.medico && t.medico.trim() !== cur.trim() ? esc(t.medico) : '', t.pianoScad ? 'piano terapeutico fino al ' + fmtD(parseData(t.pianoScad), true) + (t.pianoRif ? ' (' + esc(t.pianoRif) + ')' : '') : '', t.note ? esc(t.note) : ''].filter(Boolean).join(' · ');
+}
+function vScheda() {
+  const p = persona(view.id); if (!p) { setTimeout(() => history.back(), 0); return header('Scheda', '', { back: true, small: true }); }
+  const { att, sos, con } = schedaDati(p);
+  const it = t => `<div class="sch-it"><div class="sch-n"><b>${esc(t.nome)}</b> ${esc(t.dosaggio || '')} <span class="muted">${esc((FORME[t.forma] || FORME.altro).nome.toLowerCase())}</span></div><div class="sch-p">${esc(posologia(t))}</div>${schedaExtra(t) ? `<div class="sch-m">${schedaExtra(t)}</div>` : ''}</div>`;
+  let h = header('Scheda terapie', esc(p.nome), { back: true, small: true });
+  h += `<div class="scheda card" id="scheda">
+    <div class="print-only">Scheda terapie</div>
+    <div class="sch-h"><div class="av" style="--c:${p.colore}">${esc(iniziali(p.nome))}</div><div><h2>${esc(p.nome)}</h2><div class="muted" style="font-size:13px">${[p.relazione, p.cf ? 'CF ' + p.cf : ''].filter(Boolean).map(esc).join(' · ')}</div></div></div>
+    <div class="sch-meta">${p.medico ? `<div><span>Medico curante</span><b>${esc(p.medico)}</b></div>` : ''}<div><span>Aggiornata al</span><b>${fmtD(Date.now(), true)}</b></div></div>
+    ${p.note ? `<div class="sch-note"><span>Note</span>${esc(p.note).replace(/\n/g, '<br>')}</div>` : ''}
+    <h3>Terapie in corso <small>${att.length}</small></h3>${att.length ? att.map(it).join('') : '<p class="muted">Nessuna</p>'}
+    ${sos.length ? `<h3>Sospese</h3>${sos.map(it).join('')}` : ''}
+    ${con.length ? `<h3>Concluse negli ultimi 6 mesi</h3>${con.map(t => `<div class="sch-it"><div class="sch-n"><b>${esc(t.nome)}</b> ${esc(t.dosaggio || '')}</div><div class="sch-m">${esc(posologia(t))} · ${t.inizio ? fmtD(parseData(t.inizio), true) : '?'} → ${fmtD(parseData(t.fine), true)}</div></div>`).join('')}` : ''}
+    <p class="sch-foot">Generata con Farmacia · verificare sempre con il medico</p>
+  </div>
+  <div class="btnrow noprint" style="margin-top:14px"><button class="btn soft" data-a="schedaTesto" data-id="${p.id}">${ic('share','s')} Condividi</button><button class="btn" data-a="schedaStampa">${ic('down','s')} PDF / Stampa</button></div>`;
+  return h;
+}
+function schedaTesto(p) {
+  const { att, sos, con } = schedaDati(p);
+  const pl = t => t.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  const riga = t => `• ${t.nome}${t.dosaggio ? ' ' + t.dosaggio : ''} (${(FORME[t.forma] || FORME.altro).nome.toLowerCase()})\n   ${posologia(t)}${schedaExtra(t) ? '\n   ' + pl(schedaExtra(t)) : ''}`;
+  let s = `SCHEDA TERAPIE – ${p.nome}${p.relazione ? ' (' + p.relazione + ')' : ''}\nAggiornata al ${fmtD(Date.now(), true)}\n`;
+  if (p.cf) s += `CF: ${p.cf}\n`;
+  if (p.medico) s += `Medico curante: ${p.medico}\n`;
+  if (p.note) s += `Note: ${p.note}\n`;
+  s += `\nTERAPIE IN CORSO\n${att.length ? att.map(riga).join('\n') : 'Nessuna'}\n`;
+  if (sos.length) s += `\nSOSPESE\n${sos.map(riga).join('\n')}\n`;
+  if (con.length) s += `\nCONCLUSE NEGLI ULTIMI 6 MESI\n${con.map(t => `• ${t.nome}${t.dosaggio ? ' ' + t.dosaggio : ''}: ${t.inizio ? fmtD(parseData(t.inizio), true) : '?'} → ${fmtD(parseData(t.fine), true)}`).join('\n')}\n`;
+  return s;
 }
 
 /* ---------- vista: Guida ---------- */
@@ -824,6 +898,13 @@ const GUIDA = [
     <p>Le righe lasciate <b>vuote vengono saltate</b>: puoi contare anche un solo farmaco. Per un farmaco solo c'è anche <b>Conta scorta</b> nella sua scheda.</p>
     <p>Se conti <b>dopo l'orario di una dose che però non è ancora stata presa</b> (es. alle 21 per la pastiglia della sera), spunta <b>Contato prima di prendere la dose…</b>: la scorta scalerà anche quella. La stessa spunta c'è quando aggiungi un nuovo farmaco.</p>
     <p>Per piccoli aggiustamenti (una dose in più, una compressa persa) usa <b>Correggi</b>.</p>`],
+  ['clip', 'Scheda terapie', `
+    <p>Dalla pagina di una persona tocca l'icona <b>scheda</b> in alto: trovi il riepilogo con le terapie in corso (dosaggio, momenti, medico, piano terapeutico), quelle sospese, le concluse negli ultimi 6 mesi e le note, per esempio le allergie.</p>
+    <p><b>Condividi</b> manda il testo su WhatsApp o per mail. <b>PDF / Stampa</b> apre la stampa del telefono, da cui puoi scegliere <i>Salva come PDF</i>. Utile per il pronto soccorso, gli specialisti e le visite.</p>`],
+  ['shield', 'Piani terapeutici', `
+    <p>Per i farmaci che lo richiedono, nella terapia inserisci <b>Piano terapeutico: scade il</b> e, se vuoi, lo specialista o il centro che lo rilascia.</p>
+    <p>${PIANO_PREAVVISO} giorni prima della scadenza compare l'avviso in <b>Oggi</b>. Diventa rosso negli ultimi 15 giorni e quando è scaduto, e viene segnalato anche in <b>Riordino</b>, perché senza piano valido il medico non può fare la ricetta.</p>
+    <p>Dopo la visita apri il farmaco, tocca la riga <b>Piano terapeutico</b> e inserisci la nuova scadenza: di base ti propone 12 mesi.</p>`],
   ['refresh', 'Colliri e flaconi con validità', `
     <p>Per colliri, gocce o sciroppi da usare entro un certo periodo dall'apertura, compila <b>Da usare entro (giorni dall'apertura)</b>, per esempio 28.</p>
     <p>L'app ragiona in flaconi: ognuno dura il minore tra la validità e le gocce disponibili (indicativamente 1 ml ≈ 20 gocce). Nella scorta e nell'inventario chiede quanti <b>flaconi chiusi</b> hai e la <b>data di apertura</b> di quello in uso.</p>
@@ -948,6 +1029,11 @@ function formTerapia(t, pid) {
       <div class="f"><label>Fine (se prevista)</label><input type="date" id="f-fin" value="${base.fine || ''}"></div>
     </div>
     <div class="f"><label>Medico prescrittore</label><input id="f-med" value="${esc(base.medico)}" list="dl-med" placeholder="Es. Dott. Rossi"></div>
+    <div class="grid2">
+      <div class="f"><label>Piano terapeutico: scade il</label><input type="date" id="f-piano" value="${base.pianoScad || ''}"></div>
+      <div class="f"><label>Specialista / centro</label><input id="f-pianoRif" value="${esc(base.pianoRif || '')}" placeholder="Es. Cardiologia"></div>
+    </div>
+    <div class="hint" style="margin:-8px 2px 14px">Solo per i farmaci con piano terapeutico: ti avviso ${PIANO_PREAVVISO} giorni prima della scadenza.</div>
     ${nuovo ? `<div class="f"><label>Anticipo per la ricetta (giorni)</label><input id="f-soglia" inputmode="numeric" value="" placeholder="Predefinito: ${db.impostazioni.sogliaDefault}"><div class="hint">Quanti giorni prima dell'esaurimento ti serve per farti fare la ricetta e ritirare il farmaco.</div></div>` : ''}
     <div class="f"><label>Note</label><textarea id="f-note" placeholder="Es. a stomaco pieno, piano terapeutico, specialista…">${esc(base.note)}</textarea></div>
     ${medDatalist()}`;
@@ -996,7 +1082,7 @@ function formTerapia(t, pid) {
     const ini = v('ini') || null, fin = v('fin') || null;
     if (ini && fin && fin < ini) { toast('La fine è prima dell\'inizio'); return false; }
     const sg = num(v('soglia'));
-    const dati = Object.assign(pos, { nome, dosaggio: v('dos'), unitaConf: uc, inizio: ini, fine: fin, medico: v('med'), soglia: sg != null ? Math.round(sg) : null, apertura: num(v('apert')) > 0 ? Math.round(num(v('apert'))) : null, note: v('note'), scortaMin: pos.schema.tipo === 'bisogno' ? num(v('smin')) : null });
+    const dati = Object.assign(pos, { nome, dosaggio: v('dos'), unitaConf: uc, inizio: ini, fine: fin, medico: v('med'), soglia: sg != null ? Math.round(sg) : null, apertura: num(v('apert')) > 0 ? Math.round(num(v('apert'))) : null, pianoScad: v('piano') || null, pianoRif: v('pianoRif'), note: v('note'), scortaMin: pos.schema.tipo === 'bisogno' ? num(v('smin')) : null });
     const now = Date.now();
     if (nuovo) {
       let q, extra = {};
@@ -1133,6 +1219,21 @@ function formOrari() {
     `<p class="muted" style="font-size:12.5px;margin:4px 2px 0">È l'ora in cui la dose viene scalata dalla scorta. Mettete quella in cui di solito prendete i farmaci.</p>`,
     `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">Salva</button>`);
 }
+function formPiano(t) {
+  const vecchia = t.pianoScad;
+  const base = new Date(Math.max(vecchia ? parseData(vecchia) : 0, oggi0()));
+  const prop = isoData(new Date(base.getFullYear() + 1, base.getMonth(), base.getDate()).getTime());
+  sheetOk = () => {
+    const d = v('pn'); if (!d) { toast('Inserisci la nuova scadenza'); return false; }
+    t.pianoScad = d; t.pianoRif = v('pnRif');
+    mov(t.id, 'piano', { da: vecchia || null, a: d }); salva(); toast('Piano aggiornato'); return true;
+  };
+  apriSheet('Rinnovo piano terapeutico', `
+    <div class="f"><label>Nuova scadenza</label><input type="date" id="f-pn" value="${prop}"><div class="hint">Proposta: 12 mesi. Correggila con la data scritta sul piano.</div></div>
+    <div class="f"><label>Specialista / centro</label><input id="f-pnRif" value="${esc(t.pianoRif || '')}" placeholder="Es. Cardiologia"></div>`,
+    `<button class="btn ghost" data-a="chiudi">Annulla</button><button class="btn" data-a="ok">Salva</button>`, null,
+    `${t.nome}${vecchia ? ' · ora scade il ' + fmtD(parseData(vecchia), true) : ''}`);
+}
 function formNumero(key) {
   const lab = { sogliaDefault: 'Anticipo per la ricetta', giorniGiallo: 'Preavviso', copertura: 'Copertura richiesta', promemoriaInventario: 'Promemoria inventario' }[key];
   sheetOk = () => { const n = Math.round(num(v('n'))); if (!(n >= 0)) { toast('Valore non valido'); return false; } db.impostazioni[key] = n; salva(); return true; };
@@ -1175,6 +1276,14 @@ const A = {
     fissa(t); const scart = fi.rem; t.scortaBase = fi.chiusi * fi.L;
     mov(id, 'apertura', { scartati: scart }); salva(); render(); toast(`Nuovo ${contenitore(t, 1)} in uso`);
   },
+  scheda: id => push({ name: 'scheda', id }),
+  schedaTesto: async id => {
+    const s = schedaTesto(persona(id));
+    try { if (navigator.share) { await navigator.share({ title: 'Scheda terapie', text: s }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(s); toast('Scheda copiata'); } catch { toast('Impossibile copiare'); }
+  },
+  schedaStampa: () => { try { window.print(); } catch { toast('Stampa non disponibile su questo browser'); } },
+  rinnovaPiano: id => formPiano(terapia(id)),
   annullaRichiesta: id => { terapia(id).riordino = null; salva(); render(); },
   sospendi: async id => { const t = terapia(id); if (!await conferma('Sospendere la terapia?', 'La scorta smette di calare finché non la riprendi.', 'Sospendi')) return; fissa(t); t.stato = 'sospesa'; mov(id, 'sospesa'); salva(); render(); },
   riprendi: id => { const t = terapia(id); t.dataBase = Date.now(); t.stato = 'attiva'; mov(id, 'ripresa'); salva(); render(); },
@@ -1279,7 +1388,7 @@ function toast(msg, btn, cb) {
 
 /* ---------- badge, SW, controllo in background ---------- */
 function aggiornaBadge() {
-  const n = daGestire(db).length;
+  const n = testoAvviso(db).count;
   try { if (n && navigator.setAppBadge) navigator.setAppBadge(n); else navigator.clearAppBadge?.(); } catch {}
 }
 async function registraControllo() {

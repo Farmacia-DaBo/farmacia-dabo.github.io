@@ -161,15 +161,28 @@ function daGestire(db, now = Date.now()) {
     .sort((x, y) => RANK[x.a.livello] - RANK[y.a.livello] || x.a.giorni - y.a.giorni);
 }
 
+/* Piani terapeutici: avviso PIANO_PREAVVISO giorni prima della scadenza */
+const PIANO_PREAVVISO = 45;
+function statoPiano(t, now = Date.now()) {
+  if (!t.pianoScad || t.stato === 'conclusa') return null;
+  const scad = parseData(t.pianoScad);
+  const gg = Math.round((scad - oggi0(new Date(now))) / DAY);
+  const livello = gg < 0 ? 'scaduto' : gg <= 15 ? 'rosso' : gg <= PIANO_PREAVVISO ? 'giallo' : 'ok';
+  return { gg, scad, livello };
+}
+function pianiDaRinnovare(db, now = Date.now()) {
+  return db.terapie.filter(t => t.stato !== 'conclusa').map(t => ({ t, p: statoPiano(t, now) }))
+    .filter(x => x.p && x.p.livello !== 'ok').sort((a, b) => a.p.gg - b.p.gg);
+}
+
 function testoAvviso(db, now = Date.now()) {
   const l = daGestire(db, now);
-  if (!l.length) return { count: 0, body: '' };
-  const nomi = l.slice(0, 3).map(x => {
-    const p = db.persone.find(p => p.id === x.t.pid);
-    return `${x.t.nome}${p ? ' (' + p.nome + ')' : ''}`;
-  }).join(', ');
-  const body = (l.length === 1 ? 'Da chiedere al medico: ' : `${l.length} farmaci da chiedere al medico: `) + nomi + (l.length > 3 ? '…' : '');
-  return { count: l.length, body };
+  const pi = pianiDaRinnovare(db, now).filter(x => x.p.livello !== 'giallo');
+  const nomeP = t => { const p = db.persone.find(p => p.id === t.pid); return `${t.nome}${p ? ' (' + p.nome + ')' : ''}`; };
+  const parti = [];
+  if (l.length) parti.push((l.length === 1 ? 'Da chiedere al medico: ' : `${l.length} farmaci da chiedere al medico: `) + l.slice(0, 3).map(x => nomeP(x.t)).join(', ') + (l.length > 3 ? '…' : ''));
+  if (pi.length) parti.push((pi.length === 1 ? 'Piano terapeutico da rinnovare: ' : `${pi.length} piani terapeutici da rinnovare: `) + pi.slice(0, 2).map(x => nomeP(x.t)).join(', '));
+  return { count: l.length + pi.length, body: parti.join(' · ') };
 }
 
 /* IndexedDB minimale chiave/valore */
