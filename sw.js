@@ -1,11 +1,12 @@
 /* Farmacia — service worker */
 importScripts('core.js');
-const CACHE = 'farmacia-v1.3.0';
+const CACHE = 'farmacia-v1.3.1';
 const FILES = ['./', './index.html', './core.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png', './icons/badge-96.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
+  // cache: 'reload' = scarica sempre dal sito, mai dalla cache HTTP del browser
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(u => new Request(u, { cache: 'reload' })))));
 });
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {

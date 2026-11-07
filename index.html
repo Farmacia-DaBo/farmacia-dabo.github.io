@@ -772,7 +772,7 @@ function vAltro() {
     <button class="set" data-a="reset"><div class="si" style="background:var(--red-soft);color:var(--red)">${ic('trash','s')}</div><div class="bx"><b style="color:var(--red)">Cancella tutti i dati</b><small>Persone, terapie e storico</small></div></button>
   </div>
   <input type="file" id="file-imp" accept="application/json,.json" hidden>
-  <p class="foot-note">Farmacia · v1.3<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
+  <p class="foot-note">Farmacia · v1.3.1<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
   return h;
 }
 
@@ -817,7 +817,8 @@ const GUIDA = [
     <p>Su un telefono nuovo installi l'app e usi <b>Ripristina backup</b>.</p>`],
   ['bell', 'Notifiche e aggiornamenti', `
     <p>In <b>Altro → Avvisi scorte</b> attivi la notifica dei farmaci da riordinare e il numero sull'icona. Il controllo in background lo decide Android, quindi può arrivare con un po' di ritardo.</p>
-    <p>Quando esce una nuova versione, all'apertura compare <b>"Nuova versione disponibile"</b>: tocca <b>Aggiorna</b>. I dati restano.</p>`]
+    <p>Quando esce una nuova versione, all'apertura (o quando torni sull'app) compare <b>"Nuova versione disponibile"</b>: tocca <b>Aggiorna</b>. I dati restano.</p>
+    <p>La versione installata è indicata in fondo alla schermata <b>Altro</b>.</p>`]
 ];
 function vGuida() {
   return header('Guida', 'Come usare Farmacia', { back: true, small: true }) +
@@ -1243,9 +1244,11 @@ async function registraControllo() {
     if (st.state === 'granted') await reg.periodicSync.register('controllo-scorte', { minInterval: 12 * 3600 * 1000 });
   } catch {}
 }
+let swReg = null;
 function registraSW() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('sw.js').then(reg => {
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+    swReg = reg;
     reg.addEventListener('updatefound', () => {
       const w = reg.installing;
       w?.addEventListener('statechange', () => {
@@ -1257,7 +1260,7 @@ function registraSW() {
   let ricaricato = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (!ricaricato) { ricaricato = true; location.reload(); } });
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden && db) { render(); aggiornaBadge(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && db) { render(); aggiornaBadge(); swReg?.update().catch(() => {}); } });
 
 (async function init() {
   try { db = await IDB.get('stato'); } catch {}
