@@ -817,7 +817,7 @@ function vAltro() {
     <button class="set" data-a="reset"><div class="si" style="background:var(--red-soft);color:var(--red)">${ic('trash','s')}</div><div class="bx"><b style="color:var(--red)">Cancella tutti i dati</b><small>Persone, terapie e storico</small></div></button>
   </div>
   <input type="file" id="file-imp" accept="application/json,.json" hidden>
-  <p class="foot-note">Farmacia · v1.7<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
+  <p class="foot-note">Farmacia · v1.7.1<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
   return h;
 }
 
@@ -880,6 +880,7 @@ const GUIDA = [
     <p>Ogni telefono tiene i propri dati, separati da quelli degli altri.</p>`],
   ['pill', 'Come calcola la scorta', `
     <p>I momenti sono <b>colazione, pranzo, pomeriggio, cena e notte</b> (prima di dormire). Ogni dose intera viene scalata all'orario del momento scelto: di base 8, 13, 17, 20 e 22, ma puoi cambiarli in <b>Altro → Orari dei momenti</b> mettendo l'ora in cui li prendete davvero.</p>
+    <p>Scegli <b>un momento per ogni volta</b>: per esempio 2 volte al giorno = colazione e cena. Se le compresse si prendono tutte insieme, metti 1 volta al giorno e la quantità totale per volta. Il modulo ti avvisa se volte e momenti non coincidono.</p>
     <p>Se non scegli i momenti, o ne scegli meno delle volte al giorno, la dose del giorno viene scalata a mezzanotte. Così la stima è al massimo una dose più bassa del reale, mai più alta.</p>
     <p>I farmaci <b>al bisogno</b> calano poco alla volta, in base al consumo settimanale stimato. Puoi anche impostare una scorta minima sotto la quale ricevere l'avviso.</p>
     <p><b>Basta fino al</b> è l'ultimo giorno coperto, <b>senza dal</b> è il primo giorno in cui mancherebbe una dose.</p>`],
@@ -1010,7 +1011,7 @@ function formTerapia(t, pid) {
       </div>
       <div class="f" id="box-ogniN"><label>Ogni quanti giorni</label>${stepper('ogniN', sc.ogniN, 2, 1)}</div>
       <div class="f" id="box-giorni"><label>Giorni della settimana</label><div class="toggles">${GIORNI.map((g, i) => `<button type="button" class="tg round ${sc.giorni.includes(i) ? 'on' : ''}" data-g="${i}">${g}</button>`).join('')}</div></div>
-      <div class="f"><label>Momenti</label><div class="toggles">${MOMENTI.map(m => `<button type="button" class="tg ${sc.momenti.includes(m) ? 'on' : ''}" data-m="${m}">${m} <span style="font-weight:500;opacity:.7">${ORARI[m]}</span></button>`).join('')}</div><div class="hint">Se ne scegli tanti quante sono le volte al giorno, la scorta scala la dose a quell'ora. Altrimenti la scala a inizio giornata. Gli orari si cambiano in Altro → Orari dei momenti.</div></div>
+      <div class="f"><label>Momenti</label><div class="toggles">${MOMENTI.map(m => `<button type="button" class="tg ${sc.momenti.includes(m) ? 'on' : ''}" data-m="${m}">${m} <span style="font-weight:500;opacity:.7">${ORARI[m]}</span></button>`).join('')}</div><div class="hint">Se ne scegli tanti quante sono le volte al giorno, la scorta scala la dose a quell'ora. Altrimenti la scala a inizio giornata. Gli orari si cambiano in Altro → Orari dei momenti.</div><div class="hint" id="h-mom" style="color:var(--red)"></div></div>
     </div>
     <div id="box-bisogno">
       <div class="grid2">
@@ -1072,6 +1073,11 @@ function formTerapia(t, pid) {
         : fm === 'collirio' ? 'Indicativamente 1 ml ≈ 20 gocce (3 ml ≈ 60)' : fm === 'sciroppo' ? 'ml contenuti nel flacone' : '';
       if (uc && d && sc.tipo !== 'bisogno' && uc < d) hint = `⚠ Una confezione risulta contenere meno di una dose (${fmtN(d)} ${f.p}).` + (['gocce', 'collirio'].includes(fm) ? ' Hai indicato i ml invece delle gocce?' : '');
       hu.textContent = hint; hu.style.color = hint.startsWith('⚠') ? 'var(--red)' : '';
+    }
+    const hm = $('#h-mom');
+    if (hm) {
+      const nm = sc.momenti.length, vv = tmp.schema.volte || 1;
+      hm.textContent = sc.tipo !== 'bisogno' && nm && nm !== vv ? `⚠ Hai scelto ${nm} ${nm === 1 ? 'momento' : 'momenti'} ma ${vv} ${vv === 1 ? 'volta' : 'volte'} al giorno: ${nm < vv ? `se le ${fmtN(tmp.dose * vv)} ${f.p} si prendono tutte insieme metti 1 volta al giorno e ${fmtN(tmp.dose * vv)} per volta, altrimenti scegli un momento per ogni volta` : 'togli un momento o aumenta le volte'}.` : '';
     }
     const bp = $('#box-pre');
     if (bp) {
@@ -1144,7 +1150,7 @@ function formTerapia(t, pid) {
       const B = $('#sh-b');
       B.querySelectorAll('[data-tipo]').forEach(b => b.onclick = () => { sc.tipo = b.dataset.tipo; B.querySelectorAll('[data-tipo]').forEach(x => x.classList.toggle('on', x === b)); aggiorna(); });
       B.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const g = +b.dataset.g; const i = sc.giorni.indexOf(g); i >= 0 ? sc.giorni.splice(i, 1) : sc.giorni.push(g); b.classList.toggle('on'); aggiorna(); });
-      B.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { const m = b.dataset.m; const i = sc.momenti.indexOf(m); i >= 0 ? sc.momenti.splice(i, 1) : sc.momenti.push(m); b.classList.toggle('on'); });
+      B.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { const m = b.dataset.m; const i = sc.momenti.indexOf(m); i >= 0 ? sc.momenti.splice(i, 1) : sc.momenti.push(m); b.classList.toggle('on'); aggiorna(); });
       B.addEventListener('input', aggiorna); B.addEventListener('change', aggiorna);
       aggiorna();
       if (nuovo) setTimeout(() => $('#f-nome')?.focus(), 250);
