@@ -817,7 +817,7 @@ function vAltro() {
     <button class="set" data-a="reset"><div class="si" style="background:var(--red-soft);color:var(--red)">${ic('trash','s')}</div><div class="bx"><b style="color:var(--red)">Cancella tutti i dati</b><small>Persone, terapie e storico</small></div></button>
   </div>
   <input type="file" id="file-imp" accept="application/json,.json" hidden>
-  <p class="foot-note">Farmacia · v1.6.1<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
+  <p class="foot-note">Farmacia · v1.7<br>I dati restano solo su questo telefono, non vengono inviati a nessun server.<br>Le stime si basano sulla posologia inserita: non sostituiscono le indicazioni del medico.</p>`;
   return h;
 }
 
@@ -876,7 +876,7 @@ const GUIDA = [
   ['users', 'Per iniziare', `
     <p>1. In <b>Persone</b> aggiungi i familiari di cui segui le terapie, con il loro medico curante.</p>
     <p>2. Apri una persona e premi <b>+</b> per aggiungere un farmaco: nome, dosaggio, forma, quantità per volta, frequenza e momenti della giornata.</p>
-    <p>3. Indica quante unità ha una confezione e la <b>scorta che avete in casa adesso</b>, contando anche le scatole aperte.</p>
+    <p>3. Indica quante unità contiene una confezione (per le gocce: <b>gocce per flacone, non ml</b>) e la <b>scorta che avete in casa adesso</b>: confezioni intere più unità sfuse delle scatole aperte. Se i numeri non tornano il modulo ti avvisa, per esempio quando una confezione contiene meno di una dose.</p>
     <p>Ogni telefono tiene i propri dati, separati da quelli degli altri.</p>`],
   ['pill', 'Come calcola la scorta', `
     <p>I momenti sono <b>colazione, pranzo, pomeriggio, cena e notte</b> (prima di dormire). Ogni dose intera viene scalata all'orario del momento scelto: di base 8, 13, 17, 20 e 22, ma puoi cambiarli in <b>Altro → Orari dei momenti</b> mettendo l'ora in cui li prendete davvero.</p>
@@ -909,7 +909,7 @@ const GUIDA = [
     <p>Dopo la visita apri il farmaco, tocca la riga <b>Piano terapeutico</b> e inserisci la nuova scadenza: di base ti propone 12 mesi.</p>`],
   ['refresh', 'Colliri e flaconi con validità', `
     <p>Per colliri, gocce o sciroppi da usare entro un certo periodo dall'apertura, compila <b>Da usare entro (giorni dall'apertura)</b>, per esempio 28.</p>
-    <p>L'app ragiona in flaconi: ognuno dura il minore tra la validità e le gocce disponibili (indicativamente 1 ml ≈ 20 gocce). Nella scorta e nell'inventario chiede quanti <b>flaconi chiusi</b> hai e la <b>data di apertura</b> di quello in uso.</p>
+    <p>L'app ragiona in flaconi: ognuno dura il minore tra la validità e le gocce disponibili (colliri: circa 20 gocce per ml; gocce orali: guarda il foglietto, es. vitamina D 10.000 UI/ml = 40 gocce per ml). Nella scorta e nell'inventario chiede quanti <b>flaconi chiusi</b> hai e la <b>data di apertura</b> di quello in uso.</p>
     <p>Il giorno prima che il flacone vada buttato compare un avviso. Se ne apri uno nuovo prima del previsto, usa <b>Aperto nuovo flacone</b>.</p>`],
   ['flag', 'Sospendere, concludere, storico', `
     <p><b>Sospendi</b> blocca il calo della scorta, per esempio durante un ricovero o una pausa decisa dal medico. <b>Riprendi</b> lo fa ripartire.</p>
@@ -995,8 +995,8 @@ function firma(t) { return JSON.stringify([t.forma, t.dose, t.schema, t.inizio, 
 function formTerapia(t, pid) {
   const nuovo = !t;
   const p = persona(nuovo ? pid : t.pid);
-  const base = t || { nome: '', dosaggio: '', forma: 'compresse', dose: 1, schema: { tipo: 'giornaliero', volte: 1, ogniN: 2, giorni: [0, 1, 2, 3, 4, 5, 6], momenti: [], stimaSettimana: 2 }, unitaConf: '', inizio: isoData(), fine: '', medico: p?.medico || '', soglia: '', note: '', scortaMin: '' };
-  const sc = Object.assign({ tipo: 'giornaliero', volte: 1, ogniN: 2, giorni: [0,1,2,3,4,5,6], momenti: [], stimaSettimana: 2 }, JSON.parse(JSON.stringify(base.schema)));
+  const base = t || { nome: '', dosaggio: '', forma: 'compresse', dose: 1, schema: { tipo: 'giornaliero', volte: 1, ogniN: 2, giorni: [], momenti: [], stimaSettimana: 2 }, unitaConf: '', inizio: isoData(), fine: '', medico: p?.medico || '', soglia: '', note: '', scortaMin: '' };
+  const sc = Object.assign({ tipo: 'giornaliero', volte: 1, ogniN: 2, giorni: [], momenti: [], stimaSettimana: 2 }, JSON.parse(JSON.stringify(base.schema)));
   const fOpts = Object.entries(FORME).map(([k, f]) => `<option value="${k}" ${k === base.forma ? 'selected' : ''}>${f.nome}</option>`).join('');
   const body = `
     <div class="f"><label>Farmaco</label><input id="f-nome" value="${esc(base.nome)}" placeholder="Es. Cardioaspirina" autocomplete="off"></div>
@@ -1021,8 +1021,12 @@ function formTerapia(t, pid) {
     <div class="calc" id="calc-rate"></div>
     <div class="grid2">
       <div class="f"><label><span data-ucap>${esc(cap((FORME[base.forma]||FORME.altro).p))}</span> per confezione</label><input id="f-uconf" inputmode="decimal" value="${base.unitaConf ?? ''}" placeholder="Es. 30"><div class="hint" id="h-uconf"></div></div>
-      ${nuovo ? `<div class="f"><label>Scorta in casa ora</label><input id="f-scorta" inputmode="decimal" placeholder="Totale ${esc((FORME[base.forma]||FORME.altro).p)}"><div class="hint" id="h-scorta"></div></div>` : `<div class="f"><label>Anticipo ricetta (gg)</label><input id="f-soglia" inputmode="numeric" value="${base.soglia ?? ''}" placeholder="${db.impostazioni.sogliaDefault}"></div>`}
+      ${nuovo ? '' : `<div class="f"><label>Anticipo ricetta (gg)</label><input id="f-soglia" inputmode="numeric" value="${base.soglia ?? ''}" placeholder="${db.impostazioni.sogliaDefault}"></div>`}
     </div>
+    ${nuovo ? `<div id="box-sc-u"><span class="lbl">Scorta in casa ora</span><div class="grid2">
+      <div class="f" style="margin-bottom:8px"><input id="f-sconf" inputmode="numeric" placeholder="0"><div class="hint">confezioni intere</div></div>
+      <div class="f" style="margin-bottom:8px"><input id="f-ssfuse" inputmode="decimal" placeholder="0"><div class="hint"><span data-u>${esc((FORME[base.forma]||FORME.altro).p)}</span> sfuse (scatole aperte)</div></div></div>
+      <div class="calc" id="h-scorta"></div></div>` : ''}
     ${nuovo ? '<div id="box-pre" style="margin:-4px 0 14px"></div>' : ''}
     <div class="f"><label>Da usare entro (giorni dall'apertura)</label><input id="f-apert" inputmode="numeric" value="${base.apertura ?? ''}" placeholder="Facoltativo, es. 28"><div class="hint">Per colliri, gocce, sciroppi: dopo questo periodo il flacone aperto va buttato anche se non è finito.</div></div>
     ${nuovo ? `<div class="grid2" id="box-sc-a" hidden><div class="f"><label id="lb-chiusi">Flaconi chiusi</label><input id="f-chiusi" inputmode="numeric" placeholder="0"></div><div class="f"><label id="lb-aperto">Aperto il</label><input type="date" id="f-aperto"><div class="hint">Vuoto se nessuno è aperto</div></div></div>` : ''}
@@ -1051,13 +1055,24 @@ function formTerapia(t, pid) {
     $('#sh-b').querySelectorAll('[data-u]').forEach(e => e.textContent = f.p);
     const tmp = leggi(); const r = rateUnita(tmp);
     const uc = num(v('uconf'));
-    let txt = r ? `Consumo: ${fmtN(r)} ${r <= 1 ? f.s : f.p} al giorno` : 'Consumo non fisso';
+    const per = tmp.dose * (tmp.schema.volte || 1);
+    let txt = !r ? 'Consumo non fisso'
+      : tmp.schema.tipo === 'ogniN' ? `Consumo: ${fmtN(per)} ${per <= 1 ? f.s : f.p} ogni ${tmp.schema.ogniN} giorni`
+      : tmp.schema.tipo === 'settimanale' && tmp.schema.giorni.length < 7 ? `Consumo: ${fmtN(r * 7)} ${r * 7 <= 1 ? f.s : f.p} a settimana`
+      : `Consumo: ${fmtN(r)} ${r <= 1 ? f.s : f.p} al giorno`;
     const ap = num(v('apert'));
     const tA = Object.assign({}, tmp, { unitaConf: uc, apertura: ap });
     if (modoApertura(tA)) { const L = vitaConf(tA); txt += ` · 1 ${contenitore(tA, 1)} dura ${Math.floor(L)} gg${r && uc / r < ap ? '' : ' (limite: validità)'}`; }
     else if (r && uc) txt += ` · 1 confezione dura ~${Math.floor(uc / r)} gg`;
     $('#sh-b').querySelectorAll('[data-ucap]').forEach(e => e.textContent = cap(f.p));
-    const hu = $('#h-uconf'); if (hu) hu.textContent = ['gocce', 'collirio'].includes(v('forma')) ? 'Indicativamente 1 ml ≈ 20 gocce (3 ml ≈ 60)' : v('forma') === 'sciroppo' ? 'ml contenuti nel flacone' : '';
+    const hu = $('#h-uconf');
+    if (hu) {
+      const fm = v('forma'); const d = num(v('dose')) || 0;
+      let hint = fm === 'gocce' ? 'Le gocce per ml cambiano da farmaco a farmaco: guarda il foglietto. Es. vitamina D 10.000 UI/ml = 40 gocce/ml, quindi 10 ml = 400 gocce.'
+        : fm === 'collirio' ? 'Indicativamente 1 ml ≈ 20 gocce (3 ml ≈ 60)' : fm === 'sciroppo' ? 'ml contenuti nel flacone' : '';
+      if (uc && d && sc.tipo !== 'bisogno' && uc < d) hint = `⚠ Una confezione risulta contenere meno di una dose (${fmtN(d)} ${f.p}).` + (['gocce', 'collirio'].includes(fm) ? ' Hai indicato i ml invece delle gocce?' : '');
+      hu.textContent = hint; hu.style.color = hint.startsWith('⚠') ? 'var(--red)' : '';
+    }
     const bp = $('#box-pre');
     if (bp) {
       const on = !!bp.querySelector('[data-pre].on');
@@ -1066,13 +1081,21 @@ function formTerapia(t, pid) {
     }
     const ba = $('#box-sc-a');
     if (ba) {
-      ba.hidden = !modoApertura(tA); $('#f-scorta').closest('.f').hidden = modoApertura(tA);
+      ba.hidden = !modoApertura(tA); $('#box-sc-u').hidden = modoApertura(tA);
       $('#lb-chiusi').textContent = cap(contenitore(tA, 2)) + (flacone(tA) ? ' chiusi' : ' chiuse');
       $('#lb-aperto').textContent = flacone(tA) ? 'Aperto il' : 'Aperta il';
     }
     $('#calc-rate').innerHTML = `<span>${txt}</span>`;
     const hs = $('#h-scorta');
-    if (hs) { const q = num(v('scorta')); hs.textContent = q != null && uc ? `≈ ${fmtN(Math.round(q / uc * 10) / 10)} confezioni${r ? ' · ' + Math.floor(q / r) + ' giorni' : ''}` : 'Conta tutte le unità, anche quelle delle scatole aperte.'; }
+    if (hs) {
+      const c = num(v('sconf')), sf = num(v('ssfuse'));
+      const q = c == null && sf == null ? null : (c || 0) * (uc || 0) + (sf || 0);
+      const d = num(v('dose')) || 0;
+      hs.style.background = ''; hs.style.color = '';
+      if (q == null) hs.innerHTML = '<span>Conta le confezioni intere e, a parte, le unità delle scatole già aperte.</span>';
+      else if (d && sc.tipo !== 'bisogno' && q < d) { hs.innerHTML = `<span>⚠ ${fmtN(q)} ${f.p}: non bastano per una dose (${fmtN(d)}).</span>`; hs.style.background = 'var(--red-soft)'; hs.style.color = 'var(--red)'; }
+      else hs.innerHTML = `<span>Totale ${fmtN(q)} ${q <= 1 ? f.s : f.p}</span><span>${r ? '≈ ' + Math.floor(q / r) + ' giorni' : ''}</span>`;
+    }
   };
   sheetOk = () => {
     const nome = v('nome'); if (!nome) { toast('Inserisci il nome del farmaco'); return false; }
@@ -1093,8 +1116,9 @@ function formTerapia(t, pid) {
         if (c == null && !o) { toast('Indica i flaconi che avete in casa (anche 0)'); return false; }
         q = contaApertura(dati, c, o); extra = { chiusi: c || 0, apertoIl: o };
       } else {
-        q = num(v('scorta'));
-        if (q == null) { toast('Indica la scorta che avete in casa (anche 0)'); return false; }
+        const c = num(v('sconf')), sf = num(v('ssfuse'));
+        if (c == null && sf == null) { toast('Indica la scorta che avete in casa (anche 0)'); return false; }
+        q = (c || 0) * uc + (sf || 0);
       }
       const pre = !modoApertura(dati) && !!document.querySelector('#box-pre [data-pre].on');
       const nt = Object.assign({ id: uid(), pid, stato: 'attiva', scortaBase: q, dataBase: pre ? oggi0(new Date(now)) - 1 : now, riordino: null, creato: now }, dati);
